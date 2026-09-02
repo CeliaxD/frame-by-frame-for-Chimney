@@ -2,25 +2,80 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Discord 逐幀播放器</title>
   <style>
-    body { background: #0f0f0f; color: #fff; font-family: sans-serif; text-align: center; margin: 0; padding: 20px; }
-    video { max-width: 90vw; max-height: 80vh; margin-top: 10px; border-radius: 8px; }
-    .controls { margin-top: 15px; }
-    button { padding: 10px 20px; margin: 0 5px; font-size: 16px; cursor: pointer; background: #5865F2; color: #fff; border: none; border-radius: 5px; }
-    p { color: #aaa; font-size: 14px; }
+    body {
+      background: #0f0f0f;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+    video {
+      max-width: 100%;
+      max-height: 70vh;
+      margin-top: 10px;
+      border-radius: 8px;
+      background: #000;
+    }
+    .controls {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      padding: 0 10px;
+    }
+    button {
+      flex: 1;
+      max-width: 220px;
+      padding: 16px 20px; /* 加大觸控按鈕範圍 */
+      font-size: 20px;     /* 加大文字字級 */
+      font-weight: bold;
+      cursor: pointer;
+      background: #5865F2;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(88, 101, 242, 0.4);
+      touch-action: manipulation;
+      transition: background 0.2s, transform 0.1s;
+    }
+    button:active {
+      transform: scale(0.96);
+      background: #4752C4;
+    }
+    p {
+      color: #bbb;
+      font-size: 15px;
+      margin-top: 20px;
+      line-height: 1.6;
+    }
+    /* 手機直立螢幕特別優化 */
+    @media (max-width: 600px) {
+      button {
+        padding: 18px 10px;
+        font-size: 22px;
+      }
+      p {
+        font-size: 14px;
+      }
+    }
   </style>
 </head>
 <body>
-  <video id="videoPlayer" controls></video>
+  <video id="videoPlayer" controls playsinline></video>
+
   <div class="controls">
-    <button onclick="changeFrame(-1)">&lt; 1f ( , )</button>
-    <button onclick="changeFrame(1)">1f &gt; ( . )</button>
+    <button onclick="changeFrame(-1)">&lt; 1f</button>
+    <button onclick="changeFrame(1)">1f &gt;</button>
   </div>
-  <p>提示：亦可直接按鍵盤上的 <b>＜</b> (上一幀) 與 <b>＞</b> (下一幀)</p>
+
+  <p>亦可按鍵盤上的 <b>＜, (上一幀)</b> 與 <b>.＞ (下一幀)</b></p>
 
   <script>
-    // 抓取 URL 參數中的 video 網址
     const urlParams = new URLSearchParams(window.location.search);
     const videoUrl = urlParams.get('video');
     const fps = parseInt(urlParams.get('fps')) || 24;
@@ -36,6 +91,10 @@
     }
 
     document.addEventListener('keydown', (e) => {
+      // 避免在輸入框等區域輸入時誤觸
+      const active = document.activeElement;
+      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) return;
+
       if (e.key === ',' || e.key === '<') changeFrame(-1);
       if (e.key === '.' || e.key === '>') changeFrame(1);
     });
