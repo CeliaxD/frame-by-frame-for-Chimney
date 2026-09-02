@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>Discord 逐幀播放器</title>
+  <style>
+    body { background: #0f0f0f; color: #fff; font-family: sans-serif; text-align: center; margin: 0; padding: 20px; }
+    video { max-width: 90vw; max-height: 80vh; margin-top: 10px; border-radius: 8px; }
+    .controls { margin-top: 15px; }
+    button { padding: 10px 20px; margin: 0 5px; font-size: 16px; cursor: pointer; background: #5865F2; color: #fff; border: none; border-radius: 5px; }
+    p { color: #aaa; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <video id="videoPlayer" controls></video>
+  <div class="controls">
+    <button onclick="changeFrame(-1)">&lt; 1f ( , )</button>
+    <button onclick="changeFrame(1)">1f &gt; ( . )</button>
+  </div>
+  <p>提示：亦可直接按鍵盤上的 <b>,</b> (上一幀) 與 <b>.</b> (下一幀)</p>
+
+  <script>
+    // 抓取 URL 參數中的 video 網址
+    const urlParams = new URLSearchParams(window.location.search);
+    const videoUrl = urlParams.get('video');
+    const fps = parseInt(urlParams.get('fps')) || 24;
+    const video = document.getElementById('videoPlayer');
+
+    if (videoUrl) {
+      video.src = videoUrl;
+    }
+
+    function changeFrame(frames) {
+      video.pause();
+      video.currentTime = Math.max(0, Math.min(video.duration, video.currentTime + (frames / fps)));
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === ',' || e.key === '<') changeFrame(-1);
+      if (e.key === '.' || e.key === '>') changeFrame(1);
+    });
+  </script>
+</body>
+</html>
