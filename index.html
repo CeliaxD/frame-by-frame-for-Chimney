@@ -302,13 +302,18 @@
                 padding: 8px 14px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer;
               }
               button.active { background: #007aff; border-color: #007aff; }
-              button.save-btn { background: #28a745; border-color: #28a745; }
+              button.save-btn { 
+                background: #2E8B46; 
+                border-color: #2E8B46; 
+                color: #fff;
+              }
+              button.save-btn:active { background: #236B36; }
               button.clear-btn { 
-                background: #A23400; 
-                border-color: #A23400; 
+                background: #8C3030; 
+                border-color: #8C3030; 
                 color: #fff; 
               }
-              button.clear-btn:active { background: #802800; }
+              button.clear-btn:active { background: #6B2424; }
               canvas {
                 max-width: 95vw; max-height: 75vh; border-radius: 8px;
                 box-shadow: 0 4px 12px rgba(0,0,0,0.6); background: #000; cursor: crosshair;
@@ -319,7 +324,7 @@
             <div class="toolbar">
               <button onclick="window.close()">🔙 回播放器</button>
               <button id="penBtn" class="active" onclick="setTool('pen')">✏️ 畫筆</button>
-              <button id="eraserBtn" onclick="setTool('eraser')">🧹 橡皮擦</button>
+              <button id="eraserBtn" onclick="setTool('eraser')">🧽 橡皮擦</button>
               <label>顏色: <input type="color" id="penColor" value="#ff0000"></label>
               <label>粗細: 
                 <select id="penSize">
@@ -329,7 +334,7 @@
                 </select>
               </label>
               <button onclick="undo()">↩️ 上一步</button>
-              <button class="clear-btn" onclick="resetCanvas()">🔄 重置</button>
+              <button class="clear-btn" onclick="resetCanvas()">❌ 清除劃記</button>
               <button class="save-btn" onclick="saveImage()">💾 儲存劃記圖片</button>
             </div>
 
