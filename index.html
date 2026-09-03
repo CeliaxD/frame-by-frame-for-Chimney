@@ -63,25 +63,13 @@
     }
     button:active { transform: scale(0.96); background: #3e3f42; }
     
-    .btn-play {
-      background:#197bff;
-      border-color:#197bff;
-      color: #fff;
-    }
+    .btn-play { background:#197bff; border-color:#197bff; color: #fff; }
     .btn-play:active { background: #1a40c9; }
 
-    .btn-capture {
-      background: #199fc0;
-      border-color: #199fc0;
-      color: #000;
-    }
+    .btn-capture { background: #199fc0; border-color: #199fc0; color: #000; }
     .btn-capture:active { background: #088188; }
 
-    .btn-dev {
-      background: #ee7889;
-      border-color: #ee7889;
-      color: #000;
-    }
+    .btn-dev { background: #ee7889; border-color: #ee7889; color: #000; }
     .btn-dev:active { background: #d66373; }
 
     p { color: #bbb; font-size: 15px; margin-top: 16px; line-height: 1.6; }
@@ -115,9 +103,7 @@
     const statusText = document.getElementById('statusText');
     const btnPlay = document.getElementById('btnPlay');
 
-    if (videoUrl) {
-      video.src = videoUrl;
-    }
+    if (videoUrl) { video.src = videoUrl; }
 
     video.addEventListener('timeupdate', updateStatus);
 
@@ -158,15 +144,8 @@
       video.currentTime = newTime;
     }
 
-    document.getElementById('btnPrev').addEventListener('click', (e) => {
-      e.preventDefault();
-      stepFrame(-1);
-    });
-
-    document.getElementById('btnNext').addEventListener('click', (e) => {
-      e.preventDefault();
-      stepFrame(1);
-    });
+    document.getElementById('btnPrev').addEventListener('click', (e) => { e.preventDefault(); stepFrame(-1); });
+    document.getElementById('btnNext').addEventListener('click', (e) => { e.preventDefault(); stepFrame(1); });
 
     document.addEventListener('keydown', (e) => {
       const active = document.activeElement;
@@ -174,10 +153,7 @@
 
       if (e.key === ',' || e.key === '<') stepFrame(-1);
       if (e.key === '.' || e.key === '>') stepFrame(1);
-      if (e.key === ' ') {
-        e.preventDefault();
-        togglePlay();
-      }
+      if (e.key === ' ') { e.preventDefault(); togglePlay(); }
     });
 
     function captureFrame() {
@@ -206,16 +182,8 @@
                 <title>${fileName}</title>
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <style>
-                  body {
-                    margin: 0; padding: 20px 10px; background-color: #121212; color: #fff;
-                    display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
-                    min-height: 100vh; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-                  }
-                  .back-btn {
-                    background-color: #333; color: #fff; border: 1px solid #555;
-                    padding: 10px 20px; border-radius: 20px; font-size: 15px; font-weight: bold;
-                    cursor: pointer; margin-bottom: 20px; text-decoration: none; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-                  }
+                  body { margin: 0; padding: 20px 10px; background-color: #121212; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 100vh; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+                  .back-btn { background-color: #333; color: #fff; border: 1px solid #555; padding: 10px 20px; border-radius: 20px; font-size: 15px; font-weight: bold; cursor: pointer; margin-bottom: 20px; text-decoration: none; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
                   .back-btn:active { background-color: #555; }
                   img { max-width: 95vw; max-height: 70vh; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
                   p { margin-top: 15px; font-size: 14px; color: #aaa; text-align: center; }
@@ -228,9 +196,7 @@
               </body>
             </html>
           `);
-        } else {
-          alert("⚠️ 請允許開啟快顯視窗以檢視影格圖片！");
-        }
+        } else { alert("⚠️ 請允許開啟快顯視窗以檢視影格圖片！"); }
       } else {
         const a = document.createElement('a');
         a.href = imageDataUrl;
@@ -259,9 +225,7 @@
       const totalFrames = Math.round(video.currentTime * fps);
       const seconds = Math.floor(totalFrames / fps);
       const frames = totalFrames % fps;
-      const secStr = String(seconds).padStart(2, '0');
-      const frameStr = String(frames).padStart(2, '0');
-      const timeTag = `${secStr}s+${frameStr}f`;
+      const timeTag = `${String(seconds).padStart(2, '0')}s+${String(frames).padStart(2, '0')}f`;
 
       const canvas = document.createElement('canvas');
       canvas.width = video.videoWidth;
@@ -283,39 +247,16 @@
         <html>
           <head>
             <title>劃記影格 - ${timeTag}</title>
-            <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
             <style>
-              * { touch-action: none; box-sizing: border-box; }
-              body {
-                margin: 0; padding: 10px; background-color: #1a1a1a; color: #fff;
-                display: flex; flex-direction: column; align-items: center;
-                font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-              }
-              .toolbar {
-                display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
-                align-items: center; margin-bottom: 10px; width: 100%; max-width: 900px;
-              }
-              button, select {
-                background: #333; color: #fff; border: 1px solid #555;
-                padding: 8px 14px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer;
-              }
+              * { touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; box-sizing: border-box; }
+              body { margin: 0; padding: 10px; background-color: #1a1a1a; color: #fff; display: flex; flex-direction: column; align-items: center; font-family: -apple-system, BlinkMacSystemFont, sans-serif; overflow: hidden; }
+              .toolbar { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; align-items: center; margin-bottom: 10px; width: 100%; max-width: 900px; }
+              button, select { background: #333; color: #fff; border: 1px solid #555; padding: 8px 14px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer; }
               button.active { background: #007aff; border-color: #007aff; }
-              button.save-btn { 
-                background: #2E8B46; 
-                border-color: #2E8B46; 
-                color: #fff;
-              }
-              button.save-btn:active { background: #236B36; }
-              button.clear-btn { 
-                background: #8C3030; 
-                border-color: #8C3030; 
-                color: #fff; 
-              }
-              button.clear-btn:active { background: #6B2424; }
-              canvas {
-                max-width: 95vw; max-height: 75vh; border-radius: 8px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.6); background: #000; cursor: crosshair;
-              }
+              button.save-btn { background: #2E8B46; border-color: #2E8B46; color: #fff; }
+              button.clear-btn { background: #8C3030; border-color: #8C3030; color: #fff; }
+              canvas { max-width: 95vw; max-height: 75vh; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.6); background: #000; cursor: crosshair; }
             </style>
           </head>
           <body>
@@ -350,8 +291,7 @@
               let historyStack = [];
               let isDrawing = false;
               let points = [];
-              let lastTime = 0;
-              let lastWidth = 0;
+              let currentWidth = 0;
 
               const bgImage = new Image();
               bgImage.src = "${imageDataUrl}";
@@ -369,11 +309,8 @@
               function undo() {
                 if (historyStack.length > 1) {
                   historyStack.pop();
-                  const previousState = historyStack[historyStack.length - 1];
-                  ctx.putImageData(previousState, 0, 0);
-                } else {
-                  resetCanvas();
-                }
+                  ctx.putImageData(historyStack[historyStack.length - 1], 0, 0);
+                } else { resetCanvas(); }
               }
 
               function setTool(tool) {
@@ -397,68 +334,86 @@
                 const rect = canvas.getBoundingClientRect();
                 const scaleX = canvas.width / rect.width;
                 const scaleY = canvas.height / rect.height;
-                
-                // 優先嘗試獲取原生筆壓 (Apple Pencil 或繪圖板)
-                let pressure = e.pressure !== undefined ? e.pressure : 0;
-                
-                // 針對 iOS 裝置嘗試讀取觸控 force
-                if (e.touches && e.touches[0] && e.touches[0].force !== undefined) {
-                  pressure = e.touches[0].force;
+
+                let clientX = e.clientX;
+                let clientY = e.clientY;
+                let pressure = e.pressure;
+
+                // 針對 iOS Touch 事件進行提取
+                if (e.touches && e.touches.length > 0) {
+                  clientX = e.touches[0].clientX;
+                  clientY = e.touches[0].clientY;
+                  pressure = e.touches[0].force !== undefined ? e.touches[0].force : 0;
                 }
 
+                // 若設備無筆壓傳遞，預設給予基礎值
+                if (pressure === undefined || pressure === 0) pressure = 0.4;
+
                 return {
-                  x: (e.clientX - rect.left) * scaleX,
-                  y: (e.clientY - rect.top) * scaleY,
+                  x: (clientX - rect.left) * scaleX,
+                  y: (clientY - rect.top) * scaleY,
                   pressure: pressure,
                   time: Date.now()
                 };
               }
 
-              function calculateLineWidth(p1, p2) {
+              function calculateTargetWidth(p1, p2) {
                 const baseSize = sizePicker.value * (canvas.width / 1000);
-                
-                // 如果裝置具備真實筆壓 (壓值大於 0 且不等於預設值 0.5)
-                if (p2.pressure > 0 && p2.pressure !== 0.5) {
-                  return baseSize * p2.pressure * 1.8;
+
+                // 1. 如果有真實筆壓感應（觸控筆或具備 Force Touch 的裝置）
+                if (p2.pressure && p2.pressure !== 0.4) {
+                  return Math.max(baseSize * p2.pressure * 2, baseSize * 0.2);
                 }
 
-                // iPhone 手指或不支援筆壓的裝置：使用動態繪圖速度模擬粗細變化
+                // 2. 一般手指滑動：以速度做線性對比（揮筆快線條細，速度慢線條粗）
                 const dt = Math.max(p2.time - p1.time, 1);
                 const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
                 const speed = dist / dt;
 
-                // 速度越快線條越細，速度慢線條較粗
-                const minWidth = baseSize * 0.3;
-                const maxWidth = baseSize * 1.5;
-                const targetWidth = Math.max(maxWidth - speed * 1.2, minWidth);
-
-                // 動態平滑過渡寬度
-                return lastWidth ? lastWidth * 0.7 + targetWidth * 0.3 : targetWidth;
+                const minWidth = baseSize * 0.25;
+                const maxWidth = baseSize * 1.4;
+                return Math.max(maxWidth - speed * 1.1, minWidth);
               }
 
-              function drawSmoothLine() {
+              function startDraw(e) {
+                isDrawing = true;
+                const pos = getPos(e);
+                points = [pos, pos];
+
+                const baseSize = sizePicker.value * (canvas.width / 1000);
+                // 初始起筆強制設為極細，避免下筆產生大圓點
+                currentWidth = baseSize * 0.2;
+              }
+
+              function draw(e) {
+                if (!isDrawing) return;
+                if (e.cancelable) e.preventDefault();
+
+                const pos = getPos(e);
+                points.push(pos);
+
                 if (points.length < 3) return;
 
                 const p1 = points[points.length - 3];
                 const p2 = points[points.length - 2];
                 const p3 = points[points.length - 1];
 
-                // 計算中點，作為二次貝茲曲線的起止控制點
                 const mid1 = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
                 const mid2 = { x: (p2.x + p3.x) / 2, y: (p2.y + p3.y) / 2 };
 
-                const strokeWidth = calculateLineWidth(p1, p2);
-                lastWidth = strokeWidth;
+                const targetWidth = calculateTargetWidth(p2, p3);
+                // 使用指數平滑（Exponential Smoothing），讓寬度變化漸進過渡，避免收尾和起筆突兀
+                currentWidth = currentWidth * 0.65 + targetWidth * 0.35;
 
                 ctx.beginPath();
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
-                ctx.lineWidth = strokeWidth;
+                ctx.lineWidth = currentWidth;
 
                 if (currentTool === 'eraser') {
                   ctx.globalCompositeOperation = 'destination-out';
                   ctx.strokeStyle = 'rgba(0,0,0,1)';
-                  ctx.lineWidth = strokeWidth * 2.5;
+                  ctx.lineWidth = currentWidth * 2.5;
                 } else {
                   ctx.globalCompositeOperation = 'source-over';
                   ctx.strokeStyle = colorPicker.value;
@@ -476,37 +431,7 @@
                 }
               }
 
-              function startDraw(e) {
-                isDrawing = true;
-                const pos = getPos(e);
-                points = [pos, pos, pos];
-                lastWidth = sizePicker.value * (canvas.width / 1000);
-                
-                ctx.beginPath();
-                ctx.arc(pos.x, pos.y, lastWidth / 2, 0, Math.PI * 2);
-                ctx.fillStyle = currentTool === 'eraser' ? '#000' : colorPicker.value;
-                if (currentTool === 'eraser') {
-                  ctx.globalCompositeOperation = 'destination-out';
-                  ctx.fill();
-                  ctx.save();
-                  ctx.globalCompositeOperation = 'destination-over';
-                  ctx.drawImage(bgImage, 0, 0);
-                  ctx.restore();
-                } else {
-                  ctx.globalCompositeOperation = 'source-over';
-                  ctx.fill();
-                }
-              }
-
-              function draw(e) {
-                if (!isDrawing) return;
-                e.preventDefault();
-                const pos = getPos(e);
-                points.push(pos);
-                drawSmoothLine();
-              }
-
-              function stopDraw() {
+              function stopDraw(e) {
                 if (isDrawing) {
                   isDrawing = false;
                   ctx.globalCompositeOperation = 'source-over';
@@ -515,10 +440,16 @@
                 }
               }
 
+              // 雙軌事件監聽：兼顧 PC/Apple Pencil (Pointer) 與 iOS Safari 手指 (Touch)
               canvas.addEventListener('pointerdown', startDraw);
               canvas.addEventListener('pointermove', draw);
               canvas.addEventListener('pointerup', stopDraw);
               canvas.addEventListener('pointercancel', stopDraw);
+
+              canvas.addEventListener('touchstart', startDraw, { passive: false });
+              canvas.addEventListener('touchmove', draw, { passive: false });
+              canvas.addEventListener('touchend', stopDraw);
+              canvas.addEventListener('touchcancel', stopDraw);
 
               function saveImage() {
                 ctx.save();
@@ -539,15 +470,9 @@
                           <title>儲存圖片</title>
                           <meta name="viewport" content="width=device-width, initial-scale=1.0">
                           <style>
-                            body {
-                              margin: 0; padding: 20px 10px; background: #121212; color: #fff;
-                              display: flex; flex-direction: column; align-items: center; font-family: sans-serif;
-                            }
+                            body { margin: 0; padding: 20px 10px; background: #121212; color: #fff; display: flex; flex-direction: column; align-items: center; font-family: sans-serif; }
                             .btn-group { display: flex; gap: 10px; margin-bottom: 15px; }
-                            button {
-                              padding: 8px 16px; border-radius: 20px; background: #333; color: #fff;
-                              border: 1px solid #555; font-size: 14px; font-weight: bold;
-                            }
+                            button { padding: 8px 16px; border-radius: 20px; background: #333; color: #fff; border: 1px solid #555; font-size: 14px; font-weight: bold; }
                             img { max-width: 95vw; max-height: 70vh; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
                             p { color: #aaa; font-size: 14px; margin-top: 15px; text-align: center; }
                           </style>
