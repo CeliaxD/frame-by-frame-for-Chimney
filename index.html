@@ -180,7 +180,6 @@
       }
     });
 
-    // 1. 純下載 / iOS 開啟分頁長按儲存
     function captureFrame() {
       if (!video.videoWidth) return;
 
@@ -240,7 +239,6 @@
       }
     }
 
-    // 2. 「在這格劃記」畫板功能（含筆壓支援）
     function openMarkupBoard() {
       if (!video.videoWidth) {
         alert("⚠️ 影片尚未載入，請先載入並播放影片！");
@@ -351,7 +349,9 @@
               let currentTool = 'pen';
               let historyStack = [];
               let isDrawing = false;
-              let lastPos = null;
+              let points = [];
+              let lastTime = 0;
+              let lastWidth = 0;
 
               const bgImage = new Image();
               bgImage.src = "${imageDataUrl}";
@@ -398,72 +398,123 @@
                 const scaleX = canvas.width / rect.width;
                 const scaleY = canvas.height / rect.height;
                 
-                // 讀取筆壓（滑鼠/不支援筆壓的裝置預設壓值為 0.5 或 0）
-                let pressure = e.pressure !== undefined && e.pressure > 0 ? e.pressure : 0.5;
-                if (e.pointerType === 'mouse' && e.pressure === 0) pressure = 0.5;
+                // 優先嘗試獲取原生筆壓 (Apple Pencil 或繪圖板)
+                let pressure = e.pressure !== undefined ? e.pressure : 0;
+                
+                // 針對 iOS 裝置嘗試讀取觸控 force
+                if (e.touches && e.touches[0] && e.touches[0].force !== undefined) {
+                  pressure = e.touches[0].force;
+                }
 
                 return {
                   x: (e.clientX - rect.left) * scaleX,
                   y: (e.clientY - rect.top) * scaleY,
-                  pressure: pressure
+                  pressure: pressure,
+                  time: Date.now()
                 };
               }
 
-              function drawSegment(p1, p2) {
+              function calculateLineWidth(p1, p2) {
                 const baseSize = sizePicker.value * (canvas.width / 1000);
-                const dx = p2.x - p1.x;
-                const dy = p2.y - p1.y;
-                const dist = Math.hypot(dx, dy);
-                const steps = Math.max(Math.ceil(dist / 2), 1);
+                
+                // 如果裝置具備真實筆壓 (壓值大於 0 且不等於預設值 0.5)
+                if (p2.pressure > 0 && p2.pressure !== 0.5) {
+                  return baseSize * p2.pressure * 1.8;
+                }
 
-                for (let i = 0; i <= steps; i++) {
-                  const t = i / steps;
-                  const x = p1.x + dx * t;
-                  const y = p1.y + dy * t;
-                  const pressure = p1.pressure + (p2.pressure - p1.pressure) * t;
+                // iPhone 手指或不支援筆壓的裝置：使用動態繪圖速度模擬粗細變化
+                const dt = Math.max(p2.time - p1.time, 1);
+                const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+                const speed = dist / dt;
 
-                  ctx.beginPath();
-                  ctx.arc(x, y, (baseSize * pressure) / 2, 0, Math.PI * 2);
+                // 速度越快線條越細，速度慢線條較粗
+                const minWidth = baseSize * 0.3;
+                const maxWidth = baseSize * 1.5;
+                const targetWidth = Math.max(maxWidth - speed * 1.2, minWidth);
 
-                  if (currentTool === 'eraser') {
-                    ctx.globalCompositeOperation = 'destination-out';
-                    ctx.fillStyle = '#000';
-                    ctx.fill();
-                    ctx.save();
-                    ctx.globalCompositeOperation = 'destination-over';
-                    ctx.drawImage(bgImage, 0, 0);
-                    ctx.restore();
-                  } else {
-                    ctx.globalCompositeOperation = 'source-over';
-                    ctx.fillStyle = colorPicker.value;
-                    ctx.fill();
-                  }
+                // 動態平滑過渡寬度
+                return lastWidth ? lastWidth * 0.7 + targetWidth * 0.3 : targetWidth;
+              }
+
+              function drawSmoothLine() {
+                if (points.length < 3) return;
+
+                const p1 = points[points.length - 3];
+                const p2 = points[points.length - 2];
+                const p3 = points[points.length - 1];
+
+                // 計算中點，作為二次貝茲曲線的起止控制點
+                const mid1 = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+                const mid2 = { x: (p2.x + p3.x) / 2, y: (p2.y + p3.y) / 2 };
+
+                const strokeWidth = calculateLineWidth(p1, p2);
+                lastWidth = strokeWidth;
+
+                ctx.beginPath();
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.lineWidth = strokeWidth;
+
+                if (currentTool === 'eraser') {
+                  ctx.globalCompositeOperation = 'destination-out';
+                  ctx.strokeStyle = 'rgba(0,0,0,1)';
+                  ctx.lineWidth = strokeWidth * 2.5;
+                } else {
+                  ctx.globalCompositeOperation = 'source-over';
+                  ctx.strokeStyle = colorPicker.value;
+                }
+
+                ctx.moveTo(mid1.x, mid1.y);
+                ctx.quadraticCurveTo(p2.x, p2.y, mid2.x, mid2.y);
+                ctx.stroke();
+
+                if (currentTool === 'eraser') {
+                  ctx.save();
+                  ctx.globalCompositeOperation = 'destination-over';
+                  ctx.drawImage(bgImage, 0, 0);
+                  ctx.restore();
                 }
               }
 
               function startDraw(e) {
                 isDrawing = true;
-                lastPos = getPos(e);
-                drawSegment(lastPos, lastPos);
+                const pos = getPos(e);
+                points = [pos, pos, pos];
+                lastWidth = sizePicker.value * (canvas.width / 1000);
+                
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, lastWidth / 2, 0, Math.PI * 2);
+                ctx.fillStyle = currentTool === 'eraser' ? '#000' : colorPicker.value;
+                if (currentTool === 'eraser') {
+                  ctx.globalCompositeOperation = 'destination-out';
+                  ctx.fill();
+                  ctx.save();
+                  ctx.globalCompositeOperation = 'destination-over';
+                  ctx.drawImage(bgImage, 0, 0);
+                  ctx.restore();
+                } else {
+                  ctx.globalCompositeOperation = 'source-over';
+                  ctx.fill();
+                }
               }
 
               function draw(e) {
                 if (!isDrawing) return;
                 e.preventDefault();
-                const currentPos = getPos(e);
-                drawSegment(lastPos, currentPos);
-                lastPos = currentPos;
+                const pos = getPos(e);
+                points.push(pos);
+                drawSmoothLine();
               }
 
               function stopDraw() {
                 if (isDrawing) {
                   isDrawing = false;
                   ctx.globalCompositeOperation = 'source-over';
+                  points = [];
                   saveHistory();
                 }
               }
 
-              // 使用 Pointer Events 取代 Touch/Mouse Events 以完整支援筆壓
               canvas.addEventListener('pointerdown', startDraw);
               canvas.addEventListener('pointermove', draw);
               canvas.addEventListener('pointerup', stopDraw);
