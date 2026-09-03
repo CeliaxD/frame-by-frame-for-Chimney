@@ -302,7 +302,12 @@
               }
               button.active { background: #007aff; border-color: #007aff; }
               button.save-btn { background: #28a745; border-color: #28a745; }
-              button.clear-btn { background: #dc3545; border-color: #dc3545; }
+              button.clear-btn { 
+                background: #A23400; 
+                border-color: #A23400; 
+                color: #fff; 
+              }
+              button.clear-btn:active { background: #802800; }
               canvas {
                 max-width: 95vw; max-height: 75vh; border-radius: 8px;
                 box-shadow: 0 4px 12px rgba(0,0,0,0.6); background: #000; cursor: crosshair;
@@ -353,7 +358,6 @@
                 historyStack.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
               }
 
-              // 防護型 Undo：至少保留最底層的原始影格背景，不會變黑
               function undo() {
                 if (historyStack.length > 1) {
                   historyStack.pop();
@@ -378,7 +382,7 @@
               function resetCanvas() {
                 ctx.drawImage(bgImage, 0, 0);
                 historyStack = [];
-                saveHistory(); // 永遠將乾淨背景留作底稿
+                saveHistory();
               }
 
               let isDrawing = false;
@@ -434,7 +438,7 @@
                 if (isDrawing) {
                   isDrawing = false;
                   ctx.globalCompositeOperation = 'source-over';
-                  saveHistory(); // 每畫完一筆才存入一次歷史紀錄
+                  saveHistory();
                 }
               }
 
