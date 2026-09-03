@@ -292,6 +292,7 @@
               let isDrawing = false;
               let currentStrokePoints = [];
               let currentWidth = 0;
+              let lastVelocity = 0;
 
               const bgImage = new Image();
               bgImage.src = "${imageDataUrl}";
@@ -336,7 +337,6 @@
                 const scaleY = canvas.height / rect.height;
 
                 let events = [e];
-                // 讀取瀏覽器在高幀率下補捉的「隱藏採樣點」
                 if (e.getCoalescedEvents && e.getCoalescedEvents().length > 0) {
                   events = e.getCoalescedEvents();
                 }
@@ -366,30 +366,36 @@
               function calculateLineWidth(p1, p2) {
                 const baseSize = sizePicker.value * (canvas.width / 1000);
 
-                // 若有真實數值筆壓（電繪板或 Apple Pencil）
+                // 1. 若為 Apple Pencil 或真實電繪板筆壓 (壓力值不為0且不為標準預設值0.5)
                 if (p2.pressure && p2.pressure > 0 && p2.pressure !== 0.5) {
-                  return Math.max(baseSize * p2.pressure * 2.2, baseSize * 0.15);
+                  return Math.max(baseSize * p2.pressure * 2.2, baseSize * 0.2);
                 }
 
-                // iPhone 手指/不支援筆壓裝設：由速度動態模擬筆壓 (動態調校參數)
-                const dt = Math.max(p2.time - p1.time, 1);
+                // 2. iPhone 手指劃線：採用平滑動態速度算法模擬筆壓
+                const dt = Math.max(p2.time - p1.time, 8); // 防分母過小
                 const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
-                const speed = dist / dt;
+                const currentVelocity = dist / dt;
 
-                const minW = baseSize * 0.2;
-                const maxW = baseSize * 1.5;
-                const target = Math.max(maxW - speed * 1.3, minW);
-                return target;
+                // 使用 EMA (指數移動平均) 平滑速度，防震顫
+                lastVelocity = lastVelocity === 0 ? currentVelocity : lastVelocity * 0.7 + currentVelocity * 0.3;
+
+                // 速度越快線條越細，速度越慢線條越粗
+                const minWidth = baseSize * 0.3;
+                const maxWidth = baseSize * 1.6;
+                const targetWidth = Math.max(maxWidth - lastVelocity * 1.8, minWidth);
+
+                return targetWidth;
               }
 
               function startDraw(e) {
                 isDrawing = true;
                 const pts = parseRawEvent(e);
                 const startPt = pts[0];
-                currentStrokePoints = [startPt, startPt];
+                currentStrokePoints = [startPt];
 
                 const baseSize = sizePicker.value * (canvas.width / 1000);
-                currentWidth = baseSize * 0.3;
+                currentWidth = baseSize * 0.5;
+                lastVelocity = 0;
               }
 
               function drawSegment(p1, p2, p3) {
@@ -397,7 +403,9 @@
                 const mid2 = { x: (p2.x + p3.x) / 2, y: (p2.y + p3.y) / 2 };
 
                 const targetW = calculateLineWidth(p2, p3);
-                currentWidth = currentWidth * 0.6 + targetW * 0.4;
+                
+                // 強效平滑過渡，消解 iPhone 圓點堆積問題
+                currentWidth = currentWidth * 0.85 + targetW * 0.15;
 
                 ctx.beginPath();
                 ctx.lineCap = 'round';
@@ -431,6 +439,14 @@
 
                 const pts = parseRawEvent(e);
                 for (let pt of pts) {
+                  const lastPt = currentStrokePoints[currentStrokePoints.length - 1];
+                  
+                  // 距離過濾：移動距離超過 2.5px 才進行重繪計算，防止微小震顫導致圓點堆積
+                  if (lastPt) {
+                    const dist = Math.hypot(pt.x - lastPt.x, pt.y - lastPt.y);
+                    if (dist < 2.5) continue;
+                  }
+
                   currentStrokePoints.push(pt);
                   const len = currentStrokePoints.length;
                   if (len >= 3) {
@@ -452,7 +468,7 @@
                 }
               }
 
-              // 綁定 Event (包含 PointerEvent 與 TouchEvent)
+              // 事件綁定
               canvas.addEventListener('pointerdown', startDraw);
               canvas.addEventListener('pointermove', draw);
               canvas.addEventListener('pointerup', stopDraw);
