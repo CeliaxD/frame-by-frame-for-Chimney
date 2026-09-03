@@ -63,13 +63,25 @@
     }
     button:active { transform: scale(0.96); background: #3e3f42; }
     
-    .btn-play { background:#197bff; border-color:#197bff; color: #fff; }
+    .btn-play {
+      background:#197bff;
+      border-color:#197bff;
+      color: #fff;
+    }
     .btn-play:active { background: #1a40c9; }
 
-    .btn-capture { background: #199fc0; border-color: #199fc0; color: #000; }
+    .btn-capture {
+      background: #199fc0;
+      border-color: #199fc0;
+      color: #000;
+    }
     .btn-capture:active { background: #088188; }
 
-    .btn-dev { background: #ee7889; border-color: #ee7889; color: #000; }
+    .btn-dev {
+      background: #ee7889;
+      border-color: #ee7889;
+      color: #000;
+    }
     .btn-dev:active { background: #d66373; }
 
     p { color: #bbb; font-size: 15px; margin-top: 16px; line-height: 1.6; }
@@ -103,7 +115,9 @@
     const statusText = document.getElementById('statusText');
     const btnPlay = document.getElementById('btnPlay');
 
-    if (videoUrl) { video.src = videoUrl; }
+    if (videoUrl) {
+      video.src = videoUrl;
+    }
 
     video.addEventListener('timeupdate', updateStatus);
 
@@ -144,8 +158,15 @@
       video.currentTime = newTime;
     }
 
-    document.getElementById('btnPrev').addEventListener('click', (e) => { e.preventDefault(); stepFrame(-1); });
-    document.getElementById('btnNext').addEventListener('click', (e) => { e.preventDefault(); stepFrame(1); });
+    document.getElementById('btnPrev').addEventListener('click', (e) => {
+      e.preventDefault();
+      stepFrame(-1);
+    });
+
+    document.getElementById('btnNext').addEventListener('click', (e) => {
+      e.preventDefault();
+      stepFrame(1);
+    });
 
     document.addEventListener('keydown', (e) => {
       const active = document.activeElement;
@@ -153,9 +174,13 @@
 
       if (e.key === ',' || e.key === '<') stepFrame(-1);
       if (e.key === '.' || e.key === '>') stepFrame(1);
-      if (e.key === ' ') { e.preventDefault(); togglePlay(); }
+      if (e.key === ' ') {
+        e.preventDefault();
+        togglePlay();
+      }
     });
 
+    // 1. 純下載 / iOS 開啟分頁長按儲存
     function captureFrame() {
       if (!video.videoWidth) return;
 
@@ -182,8 +207,16 @@
                 <title>${fileName}</title>
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <style>
-                  body { margin: 0; padding: 20px 10px; background-color: #121212; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 100vh; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
-                  .back-btn { background-color: #333; color: #fff; border: 1px solid #555; padding: 10px 20px; border-radius: 20px; font-size: 15px; font-weight: bold; cursor: pointer; margin-bottom: 20px; text-decoration: none; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+                  body {
+                    margin: 0; padding: 20px 10px; background-color: #121212; color: #fff;
+                    display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+                    min-height: 100vh; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+                  }
+                  .back-btn {
+                    background-color: #333; color: #fff; border: 1px solid #555;
+                    padding: 10px 20px; border-radius: 20px; font-size: 15px; font-weight: bold;
+                    cursor: pointer; margin-bottom: 20px; text-decoration: none; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+                  }
                   .back-btn:active { background-color: #555; }
                   img { max-width: 95vw; max-height: 70vh; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
                   p { margin-top: 15px; font-size: 14px; color: #aaa; text-align: center; }
@@ -196,7 +229,9 @@
               </body>
             </html>
           `);
-        } else { alert("⚠️ 請允許開啟快顯視窗以檢視影格圖片！"); }
+        } else {
+          alert("⚠️ 請允許開啟快顯視窗以檢視影格圖片！");
+        }
       } else {
         const a = document.createElement('a');
         a.href = imageDataUrl;
@@ -205,6 +240,7 @@
       }
     }
 
+    // 2. 「在這格劃記」畫板功能
     function openMarkupBoard() {
       if (!video.videoWidth) {
         alert("⚠️ 影片尚未載入，請先載入並播放影片！");
@@ -225,7 +261,9 @@
       const totalFrames = Math.round(video.currentTime * fps);
       const seconds = Math.floor(totalFrames / fps);
       const frames = totalFrames % fps;
-      const timeTag = `${String(seconds).padStart(2, '0')}s+${String(frames).padStart(2, '0')}f`;
+      const secStr = String(seconds).padStart(2, '0');
+      const frameStr = String(frames).padStart(2, '0');
+      const timeTag = `${secStr}s+${frameStr}f`;
 
       const canvas = document.createElement('canvas');
       canvas.width = video.videoWidth;
@@ -247,16 +285,39 @@
         <html>
           <head>
             <title>劃記影格 - ${timeTag}</title>
-            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
             <style>
-              * { touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; box-sizing: border-box; }
-              body { margin: 0; padding: 10px; background-color: #1a1a1a; color: #fff; display: flex; flex-direction: column; align-items: center; font-family: -apple-system, BlinkMacSystemFont, sans-serif; overflow: hidden; }
-              .toolbar { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; align-items: center; margin-bottom: 10px; width: 100%; max-width: 900px; }
-              button, select { background: #333; color: #fff; border: 1px solid #555; padding: 8px 14px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer; }
+              * { touch-action: none; box-sizing: border-box; }
+              body {
+                margin: 0; padding: 10px; background-color: #1a1a1a; color: #fff;
+                display: flex; flex-direction: column; align-items: center;
+                font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+              }
+              .toolbar {
+                display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+                align-items: center; margin-bottom: 10px; width: 100%; max-width: 900px;
+              }
+              button, select {
+                background: #333; color: #fff; border: 1px solid #555;
+                padding: 8px 14px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer;
+              }
               button.active { background: #007aff; border-color: #007aff; }
-              button.save-btn { background: #2E8B46; border-color: #2E8B46; color: #fff; }
-              button.clear-btn { background: #8C3030; border-color: #8C3030; color: #fff; }
-              canvas { max-width: 95vw; max-height: 75vh; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.6); background: #000; cursor: crosshair; }
+              button.save-btn { 
+                background: #2E8B46; 
+                border-color: #2E8B46; 
+                color: #fff;
+              }
+              button.save-btn:active { background: #236B36; }
+              button.clear-btn { 
+                background: #8C3030; 
+                border-color: #8C3030; 
+                color: #fff; 
+              }
+              button.clear-btn:active { background: #6B2424; }
+              canvas {
+                max-width: 95vw; max-height: 75vh; border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.6); background: #000; cursor: crosshair;
+              }
             </style>
           </head>
           <body>
@@ -289,9 +350,6 @@
 
               let currentTool = 'pen';
               let historyStack = [];
-              let isDrawing = false;
-              let currentStrokePoints = [];
-              let currentWidth = 0;
 
               const bgImage = new Image();
               bgImage.src = "${imageDataUrl}";
@@ -309,8 +367,11 @@
               function undo() {
                 if (historyStack.length > 1) {
                   historyStack.pop();
-                  ctx.putImageData(historyStack[historyStack.length - 1], 0, 0);
-                } else { resetCanvas(); }
+                  const previousState = historyStack[historyStack.length - 1];
+                  ctx.putImageData(previousState, 0, 0);
+                } else {
+                  resetCanvas();
+                }
               }
 
               function setTool(tool) {
@@ -330,88 +391,45 @@
                 saveHistory();
               }
 
-              function parseRawEvent(e) {
+              let isDrawing = false;
+
+              function getPos(e) {
                 const rect = canvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
                 const scaleX = canvas.width / rect.width;
                 const scaleY = canvas.height / rect.height;
-
-                let events = [e];
-                if (e.getCoalescedEvents && e.getCoalescedEvents().length > 0) {
-                  events = e.getCoalescedEvents();
-                }
-
-                const result = [];
-                for (let ev of events) {
-                  let clientX = ev.clientX;
-                  let clientY = ev.clientY;
-                  let pressure = ev.pressure;
-                  let pointerType = ev.pointerType || 'mouse';
-
-                  if (ev.touches && ev.touches.length > 0) {
-                    clientX = ev.touches[0].clientX;
-                    clientY = ev.touches[0].clientY;
-                    pressure = ev.touches[0].force || 0;
-                    pointerType = 'touch';
-                  }
-
-                  result.push({
-                    x: (clientX - rect.left) * scaleX,
-                    y: (clientY - rect.top) * scaleY,
-                    pressure: pressure,
-                    pointerType: pointerType
-                  });
-                }
-                return result;
-              }
-
-              function calculateLineWidth(p) {
-                const baseSize = sizePicker.value * (canvas.width / 1000);
-
-                // 核心判定：只有當來自「電繪筆/Apple Pencil (pen)」且「確實回傳有效的物理壓力訊號」時，才計算筆壓
-                const isStylus = p.pointerType === 'pen' || (p.pressure && p.pressure > 0 && p.pressure !== 0.5);
-
-                if (isStylus) {
-                  return Math.max(baseSize * p.pressure * 2.0, baseSize * 0.2);
-                }
-
-                // 其他一般手指觸控 (touch) 或滑鼠點按 (mouse)：輸出乾淨穩定線寬
-                return baseSize;
+                return {
+                  x: (clientX - rect.left) * scaleX,
+                  y: (clientY - rect.top) * scaleY
+                };
               }
 
               function startDraw(e) {
                 isDrawing = true;
-                const pts = parseRawEvent(e);
-                const startPt = pts[0];
-                currentStrokePoints = [startPt];
-
-                currentWidth = calculateLineWidth(startPt);
-              }
-
-              function drawSegment(p1, p2, p3) {
-                const mid1 = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
-                const mid2 = { x: (p2.x + p3.x) / 2, y: (p2.y + p3.y) / 2 };
-
-                const targetW = calculateLineWidth(p3);
-                
-                // 平滑化線寬動態，確保筆壓切換與畫線過程滑順
-                currentWidth = currentWidth * 0.7 + targetW * 0.3;
-
+                const pos = getPos(e);
                 ctx.beginPath();
+                ctx.moveTo(pos.x, pos.y);
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
-                ctx.lineWidth = currentWidth;
+
+                const baseSize = sizePicker.value * (canvas.width / 1000);
 
                 if (currentTool === 'eraser') {
                   ctx.globalCompositeOperation = 'destination-out';
-                  ctx.strokeStyle = 'rgba(0,0,0,1)';
-                  ctx.lineWidth = currentWidth * 2.5;
+                  ctx.lineWidth = baseSize * 2.5;
                 } else {
                   ctx.globalCompositeOperation = 'source-over';
                   ctx.strokeStyle = colorPicker.value;
+                  ctx.lineWidth = baseSize;
                 }
+              }
 
-                ctx.moveTo(mid1.x, mid1.y);
-                ctx.quadraticCurveTo(p2.x, p2.y, mid2.x, mid2.y);
+              function draw(e) {
+                if (!isDrawing) return;
+                e.preventDefault();
+                const pos = getPos(e);
+                ctx.lineTo(pos.x, pos.y);
                 ctx.stroke();
 
                 if (currentTool === 'eraser') {
@@ -422,51 +440,21 @@
                 }
               }
 
-              function draw(e) {
-                if (!isDrawing) return;
-                if (e.cancelable) e.preventDefault();
-
-                const pts = parseRawEvent(e);
-                for (let pt of pts) {
-                  const lastPt = currentStrokePoints[currentStrokePoints.length - 1];
-                  
-                  // 距離過濾：移動距離 > 2px 才進行繪製，徹底解決手指滑動導致的圓點堆積問題
-                  if (lastPt) {
-                    const dist = Math.hypot(pt.x - lastPt.x, pt.y - lastPt.y);
-                    if (dist < 2.0) continue;
-                  }
-
-                  currentStrokePoints.push(pt);
-                  const len = currentStrokePoints.length;
-                  if (len >= 3) {
-                    drawSegment(
-                      currentStrokePoints[len - 3],
-                      currentStrokePoints[len - 2],
-                      currentStrokePoints[len - 1]
-                    );
-                  }
-                }
-              }
-
-              function stopDraw(e) {
+              function stopDraw() {
                 if (isDrawing) {
                   isDrawing = false;
                   ctx.globalCompositeOperation = 'source-over';
-                  currentStrokePoints = [];
                   saveHistory();
                 }
               }
 
-              // 事件綁定
-              canvas.addEventListener('pointerdown', startDraw);
-              canvas.addEventListener('pointermove', draw);
-              canvas.addEventListener('pointerup', stopDraw);
-              canvas.addEventListener('pointercancel', stopDraw);
+              canvas.addEventListener('mousedown', startDraw);
+              canvas.addEventListener('mousemove', draw);
+              canvas.addEventListener('mouseup', stopDraw);
 
-              canvas.addEventListener('touchstart', startDraw, { passive: false });
-              canvas.addEventListener('touchmove', draw, { passive: false });
+              canvas.addEventListener('touchstart', startDraw);
+              canvas.addEventListener('touchmove', draw);
               canvas.addEventListener('touchend', stopDraw);
-              canvas.addEventListener('touchcancel', stopDraw);
 
               function saveImage() {
                 ctx.save();
@@ -487,9 +475,15 @@
                           <title>儲存圖片</title>
                           <meta name="viewport" content="width=device-width, initial-scale=1.0">
                           <style>
-                            body { margin: 0; padding: 20px 10px; background: #121212; color: #fff; display: flex; flex-direction: column; align-items: center; font-family: sans-serif; }
+                            body {
+                              margin: 0; padding: 20px 10px; background: #121212; color: #fff;
+                              display: flex; flex-direction: column; align-items: center; font-family: sans-serif;
+                            }
                             .btn-group { display: flex; gap: 10px; margin-bottom: 15px; }
-                            button { padding: 8px 16px; border-radius: 20px; background: #333; color: #fff; border: 1px solid #555; font-size: 14px; font-weight: bold; }
+                            button {
+                              padding: 8px 16px; border-radius: 20px; background: #333; color: #fff;
+                              border: 1px solid #555; font-size: 14px; font-weight: bold;
+                            }
                             img { max-width: 95vw; max-height: 70vh; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
                             p { color: #aaa; font-size: 14px; margin-top: 15px; text-align: center; }
                           </style>
