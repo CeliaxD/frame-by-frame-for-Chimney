@@ -240,7 +240,7 @@
       }
     }
 
-    // 2. 「在這格劃記」畫板功能
+    // 2. 「在這格劃記」畫板功能（含筆壓支援）
     function openMarkupBoard() {
       if (!video.videoWidth) {
         alert("⚠️ 影片尚未載入，請先載入並播放影片！");
@@ -350,6 +350,8 @@
 
               let currentTool = 'pen';
               let historyStack = [];
+              let isDrawing = false;
+              let lastPos = null;
 
               const bgImage = new Image();
               bgImage.src = "${imageDataUrl}";
@@ -391,53 +393,66 @@
                 saveHistory();
               }
 
-              let isDrawing = false;
-
               function getPos(e) {
                 const rect = canvas.getBoundingClientRect();
-                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
                 const scaleX = canvas.width / rect.width;
                 const scaleY = canvas.height / rect.height;
+                
+                // 讀取筆壓（滑鼠/不支援筆壓的裝置預設壓值為 0.5 或 0）
+                let pressure = e.pressure !== undefined && e.pressure > 0 ? e.pressure : 0.5;
+                if (e.pointerType === 'mouse' && e.pressure === 0) pressure = 0.5;
+
                 return {
-                  x: (clientX - rect.left) * scaleX,
-                  y: (clientY - rect.top) * scaleY
+                  x: (e.clientX - rect.left) * scaleX,
+                  y: (e.clientY - rect.top) * scaleY,
+                  pressure: pressure
                 };
+              }
+
+              function drawSegment(p1, p2) {
+                const baseSize = sizePicker.value * (canvas.width / 1000);
+                const dx = p2.x - p1.x;
+                const dy = p2.y - p1.y;
+                const dist = Math.hypot(dx, dy);
+                const steps = Math.max(Math.ceil(dist / 2), 1);
+
+                for (let i = 0; i <= steps; i++) {
+                  const t = i / steps;
+                  const x = p1.x + dx * t;
+                  const y = p1.y + dy * t;
+                  const pressure = p1.pressure + (p2.pressure - p1.pressure) * t;
+
+                  ctx.beginPath();
+                  ctx.arc(x, y, (baseSize * pressure) / 2, 0, Math.PI * 2);
+
+                  if (currentTool === 'eraser') {
+                    ctx.globalCompositeOperation = 'destination-out';
+                    ctx.fillStyle = '#000';
+                    ctx.fill();
+                    ctx.save();
+                    ctx.globalCompositeOperation = 'destination-over';
+                    ctx.drawImage(bgImage, 0, 0);
+                    ctx.restore();
+                  } else {
+                    ctx.globalCompositeOperation = 'source-over';
+                    ctx.fillStyle = colorPicker.value;
+                    ctx.fill();
+                  }
+                }
               }
 
               function startDraw(e) {
                 isDrawing = true;
-                const pos = getPos(e);
-                ctx.beginPath();
-                ctx.moveTo(pos.x, pos.y);
-                ctx.lineCap = 'round';
-                ctx.lineJoin = 'round';
-
-                const baseSize = sizePicker.value * (canvas.width / 1000);
-
-                if (currentTool === 'eraser') {
-                  ctx.globalCompositeOperation = 'destination-out';
-                  ctx.lineWidth = baseSize * 2.5;
-                } else {
-                  ctx.globalCompositeOperation = 'source-over';
-                  ctx.strokeStyle = colorPicker.value;
-                  ctx.lineWidth = baseSize;
-                }
+                lastPos = getPos(e);
+                drawSegment(lastPos, lastPos);
               }
 
               function draw(e) {
                 if (!isDrawing) return;
                 e.preventDefault();
-                const pos = getPos(e);
-                ctx.lineTo(pos.x, pos.y);
-                ctx.stroke();
-
-                if (currentTool === 'eraser') {
-                  ctx.save();
-                  ctx.globalCompositeOperation = 'destination-over';
-                  ctx.drawImage(bgImage, 0, 0);
-                  ctx.restore();
-                }
+                const currentPos = getPos(e);
+                drawSegment(lastPos, currentPos);
+                lastPos = currentPos;
               }
 
               function stopDraw() {
@@ -448,13 +463,11 @@
                 }
               }
 
-              canvas.addEventListener('mousedown', startDraw);
-              canvas.addEventListener('mousemove', draw);
-              canvas.addEventListener('mouseup', stopDraw);
-
-              canvas.addEventListener('touchstart', startDraw);
-              canvas.addEventListener('touchmove', draw);
-              canvas.addEventListener('touchend', stopDraw);
+              // 使用 Pointer Events 取代 Touch/Mouse Events 以完整支援筆壓
+              canvas.addEventListener('pointerdown', startDraw);
+              canvas.addEventListener('pointermove', draw);
+              canvas.addEventListener('pointerup', stopDraw);
+              canvas.addEventListener('pointercancel', stopDraw);
 
               function saveImage() {
                 ctx.save();
