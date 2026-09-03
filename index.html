@@ -60,7 +60,7 @@
   <div class="controls">
     <button id="btnPrev">&lt; 1f</button>
     <button id="btnNext">1f &gt;</button>
-    <button id="captureBtn" onclick="captureFrame()">截取當前影格</button>
+    <button id="captureBtn" onclick="captureFrame()">儲存當前影格</button>
   </div>
 
   <p>亦可按鍵盤上的 <b>＜, (上一幀)</b> 與 <b>.＞ (下一幀)</b></p>
@@ -77,29 +77,79 @@
     }
 
     //擷取影格
-      function captureFrame() {
-            const video = document.querySelector('video'); // 取得網頁中的影片元件
-            if (!video) return;
-          
-            // 1. 建立一個與影片解析度完全相同的隱藏 Canvas
-            const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-          
-            // 2. 將影片當前影格繪製到 Canvas 上
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          
-            // 3. 計算當前時間/影格 (以 24 FPS 計算檔名)
-            const currentFrame = Math.round(video.currentTime * 24);
-            const fileName = `frame_${currentFrame}.png`;
-          
-            // 4. 觸發瀏覽器自動下載 PNG 圖檔
+        function captureFrame() {
+          const video = document.querySelector('video');
+          if (!video) return;
+        
+          // 1. 建立 Canvas 並繪製當前影格
+          const canvas = document.createElement('canvas');
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+        
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+          const currentFrame = Math.round(video.currentTime * 24);
+          const fileName = `frame_${currentFrame}.png`;
+          const imageDataUrl = canvas.toDataURL('image/png');
+        
+          // 2. 判斷是否為 iOS 裝置 (iPhone / iPad)
+          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        
+          if (isIOS) {
+            // iOS 最佳解法：開啟新分頁呈現圖片，讓使用者長按儲存
+            const newWindow = window.open();
+            if (newWindow) {
+              newWindow.document.write(`
+                <html>
+                  <head>
+                    <title>${fileName}</title>
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <style>
+                      body {
+                        margin: 0;
+                        background-color: #121212;
+                        color: #fff;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        min-height: 100vh;
+                        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+                      }
+                      img {
+                        max-width: 95vw;
+                        max-height: 80vh;
+                        border-radius: 8px;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+                      }
+                      p {
+                        margin-top: 15px;
+                        font-size: 14px;
+                        color: #aaa;
+                      }
+                    </style>
+                  </head>
+                  <body>
+                    <img src="${imageDataUrl}" alt="${fileName}" />
+                    <p>💡 請長按上方圖片選擇<b>「儲存至『照片』」</b></p>
+                  </body>
+                </html>
+              `);
+            } else {
+              alert("⚠️ 請允許開啟快顯視窗以檢視影格圖片！");
+            }
+          } else {
+            // Android / Windows / Mac 桌面的標準觸發下載邏輯
             const a = document.createElement('a');
-            a.href = canvas.toDataURL('image/png');
+            a.href = imageDataUrl;
             a.download = fileName;
             a.click();
           }
+        }
+
+    
     function stepFrame(frames) {
       if (!video.paused) {
         video.pause();
