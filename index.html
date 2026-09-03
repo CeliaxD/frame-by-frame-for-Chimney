@@ -78,76 +78,96 @@
 
     //擷取影格
         function captureFrame() {
-          const video = document.querySelector('video');
-          if (!video) return;
-        
-          // 1. 建立 Canvas 並繪製當前影格
-          const canvas = document.createElement('canvas');
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-        
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
-          const currentFrame = Math.round(video.currentTime * 24);
-          const fileName = `frame_${currentFrame}.png`;
-          const imageDataUrl = canvas.toDataURL('image/png');
-        
-          // 2. 判斷是否為 iOS 裝置 (iPhone / iPad)
-          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-        
-          if (isIOS) {
-            // iOS 最佳解法：開啟新分頁呈現圖片，讓使用者長按儲存
-            const newWindow = window.open();
-            if (newWindow) {
-              newWindow.document.write(`
-                <html>
-                  <head>
-                    <title>${fileName}</title>
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <style>
-                      body {
-                        margin: 0;
-                        background-color: #121212;
-                        color: #fff;
-                        display: flex;
-                        flex-direction: column;
-                        align-items: center;
-                        justify-content: center;
-                        min-height: 100vh;
-                        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-                      }
-                      img {
-                        max-width: 95vw;
-                        max-height: 80vh;
-                        border-radius: 8px;
-                        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-                      }
-                      p {
-                        margin-top: 15px;
-                        font-size: 14px;
-                        color: #aaa;
-                      }
-                    </style>
-                  </head>
-                  <body>
-                    <img src="${imageDataUrl}" alt="${fileName}" />
-                    <p>💡 請長按上方圖片選擇<b>「儲存至『照片』」</b></p>
-                  </body>
-                </html>
-              `);
-            } else {
-              alert("⚠️ 請允許開啟快顯視窗以檢視影格圖片！");
-            }
-          } else {
-            // Android / Windows / Mac 桌面的標準觸發下載邏輯
-            const a = document.createElement('a');
-            a.href = imageDataUrl;
-            a.download = fileName;
-            a.click();
-          }
-        }
+  const video = document.querySelector('video');
+  if (!video) return;
+
+  // 1. 建立 Canvas 並繪製當前影格
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  const currentFrame = Math.round(video.currentTime * 24);
+  const fileName = `frame_${currentFrame}.png`;
+  const imageDataUrl = canvas.toDataURL('image/png');
+
+  // 2. 判斷是否為 iOS 裝置 (iPhone / iPad)
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+  if (isIOS) {
+    // iOS 最佳解法：開啟新分頁呈現圖片 + 返回按鈕
+    const newWindow = window.open();
+    if (newWindow) {
+      newWindow.document.write(`
+        <html>
+          <head>
+            <title>${fileName}</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+              body {
+                margin: 0;
+                padding: 20px 10px;
+                background-color: #121212;
+                color: #fff;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-start;
+                min-height: 100vh;
+                box-sizing: border-box;
+                font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+              }
+              .back-btn {
+                background-color: #333;
+                color: #fff;
+                border: 1px solid #555;
+                padding: 10px 20px;
+                border-radius: 20px;
+                font-size: 15px;
+                font-weight: bold;
+                cursor: pointer;
+                margin-bottom: 20px;
+                text-decoration: none;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+              }
+              .back-btn:active {
+                background-color: #555;
+              }
+              img {
+                max-width: 95vw;
+                max-height: 70vh;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+              }
+              p {
+                margin-top: 15px;
+                font-size: 14px;
+                color: #aaa;
+                text-align: center;
+              }
+            </style>
+          </head>
+          <body>
+            <button class="back-btn" onclick="window.close()">🔙 回到播放器</button>
+            <img src="${imageDataUrl}" alt="${fileName}" />
+            <p>💡 請長按上方圖片選擇<b>「儲存至『照片』」</b></p>
+          </body>
+        </html>
+      `);
+    } else {
+      alert("⚠️ 請允許開啟快顯視窗以檢視影格圖片！");
+    }
+  } else {
+    // Android / Windows / Mac 桌面的標準觸發下載邏輯
+    const a = document.createElement('a');
+    a.href = imageDataUrl;
+    a.download = fileName;
+    a.click();
+  }
+}
 
     
     function stepFrame(frames) {
