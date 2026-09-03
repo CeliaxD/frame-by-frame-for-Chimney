@@ -60,6 +60,7 @@
   <div class="controls">
     <button id="btnPrev">&lt; 1f</button>
     <button id="btnNext">1f &gt;</button>
+    <button id="captureBtn" onclick="captureFrame()">截取當前影格</button>
   </div>
 
   <p>亦可按鍵盤上的 <b>＜, (上一幀)</b> 與 <b>.＞ (下一幀)</b></p>
@@ -75,6 +76,30 @@
       video.src = videoUrl;
     }
 
+    //擷取影格
+      function captureFrame() {
+            const video = document.querySelector('video'); // 取得網頁中的影片元件
+            if (!video) return;
+          
+            // 1. 建立一個與影片解析度完全相同的隱藏 Canvas
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+          
+            // 2. 將影片當前影格繪製到 Canvas 上
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          
+            // 3. 計算當前時間/影格 (以 24 FPS 計算檔名)
+            const currentFrame = Math.round(video.currentTime * 24);
+            const fileName = `frame_${currentFrame}.png`;
+          
+            // 4. 觸發瀏覽器自動下載 PNG 圖檔
+            const a = document.createElement('a');
+            a.href = canvas.toDataURL('image/png');
+            a.download = fileName;
+            a.click();
+          }
     function stepFrame(frames) {
       if (!video.paused) {
         video.pause();
