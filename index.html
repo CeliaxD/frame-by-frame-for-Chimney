@@ -98,8 +98,8 @@
       <button id="btnPrev">⏮️ &lt; 1f</button>
       <button id="btnPlay" class="btn-play" onclick="togglePlay()">▶️ 播放</button>
       <button id="btnNext">1f &gt; ⏭️</button>
-      <button id="captureBtn" class="btn-capture" onclick="captureFrame()">儲存當前影格</button>
-      <button id="devBtn" class="btn-dev" onclick="openMarkupBoard()">📸 新功能開發中</button>
+      <button id="captureBtn" class="btn-capture" onclick="captureFrame()">儲存這一格</button>
+      <button id="devBtn" class="btn-dev" onclick="openMarkupBoard()">在這格劃記</button>
     </div>
 
     <p>亦可按鍵盤上的 <b>＜, (上一幀)</b> 與 <b>.＞ (下一幀)</b></p>
@@ -179,7 +179,7 @@
       }
     });
 
-    // 1. 原版穩定截圖 (純下載 / iOS 開啟分頁長按儲存)
+    // 1. 純下載 / iOS 開啟分頁長按儲存
     function captureFrame() {
       if (!video.videoWidth) return;
 
@@ -239,14 +239,13 @@
       }
     }
 
-    // 2. 「新功能開發中」：劃記畫板實驗功能
+    // 2. 「在這格劃記」畫板功能
     function openMarkupBoard() {
       if (!video.videoWidth) {
         alert("⚠️ 影片尚未載入，請先載入並播放影片！");
         return;
       }
 
-      // 點擊觸發第一時間先開啟新視窗（避免瀏覽器防彈窗機制封鎖）
       const newWindow = window.open('', '_blank');
       if (!newWindow) {
         alert("⚠️ 視窗被瀏覽器封鎖！請在網址列允許「開啟快顯視窗/彈出式視窗」。");
@@ -354,10 +353,14 @@
                 historyStack.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
               }
 
+              // 防護型 Undo：至少保留最底層的原始影格背景，不會變黑
               function undo() {
-                if (historyStack.length > 0) {
-                  const previousState = historyStack.pop();
+                if (historyStack.length > 1) {
+                  historyStack.pop();
+                  const previousState = historyStack[historyStack.length - 1];
                   ctx.putImageData(previousState, 0, 0);
+                } else {
+                  resetCanvas();
                 }
               }
 
@@ -373,8 +376,9 @@
               }
 
               function resetCanvas() {
-                saveHistory();
                 ctx.drawImage(bgImage, 0, 0);
+                historyStack = [];
+                saveHistory(); // 永遠將乾淨背景留作底稿
               }
 
               let isDrawing = false;
@@ -392,7 +396,6 @@
               }
 
               function startDraw(e) {
-                saveHistory();
                 isDrawing = true;
                 const pos = getPos(e);
                 ctx.beginPath();
@@ -431,6 +434,7 @@
                 if (isDrawing) {
                   isDrawing = false;
                   ctx.globalCompositeOperation = 'source-over';
+                  saveHistory(); // 每畫完一筆才存入一次歷史紀錄
                 }
               }
 
