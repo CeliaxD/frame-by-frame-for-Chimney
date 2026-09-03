@@ -3,204 +3,422 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Discord 逐幀播放器</title>
+  <title>24fps逐格播放器</title>
   <style>
+    * { box-sizing: border-box; }
     body {
-      background: #0f0f0f;
-      color: #fff;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      text-align: center;
       margin: 0;
       padding: 16px;
-      box-sizing: border-box;
+      background-color: #121212;
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
     }
     video {
       width: 100%;
-      max-width: 900px;
       max-height: 70vh;
-      margin-top: 10px;
       border-radius: 8px;
-      background: #000;
+      background-color: #000;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
     }
     .controls {
-      margin-top: 20px;
       display: flex;
+      flex-wrap: wrap;
       justify-content: center;
-      gap: 16px;
-      padding: 0 10px;
+      gap: 10px;
+      width: 100%;
     }
     button {
-      flex: 1;
-      max-width: 220px;
-      padding: 18px 10px;
-      font-size: 22px;
+      background-color: #2c2c2e;
+      color: #fff;
+      border: 1px solid #444;
+      padding: 10px 18px;
+      border-radius: 20px;
+      font-size: 15px;
       font-weight: bold;
       cursor: pointer;
-      background: #5865F2;
-      color: #fff;
-      border: none;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(88, 101, 242, 0.4);
-      touch-action: manipulation;
-      transition: background 0.2s, transform 0.1s;
-      -webkit-tap-highlight-color: transparent;
+      transition: background-color 0.2s;
     }
-    button:active { transform: scale(0.96); background: #4752C4; }
-    p { color: #bbb; font-size: 15px; margin-top: 16px; line-height: 1.6; }
-    .mobile-tip { color: #9EAAE6; font-size: 14px; margin-top: 8px; }
-    @media (max-width: 600px) {
-      p { font-size: 14px; }
-      .mobile-tip { font-size: 14px; }
+    button:active {
+      background-color: #48484a;
+    }
+    button.primary-btn {
+      background-color: #0a84ff;
+      border-color: #0a84ff;
+    }
+    button.markup-btn {
+      background-color: #30d158;
+      border-color: #30d158;
+      color: #000;
+    }
+    .status {
+      font-size: 14px;
+      color: #aaa;
     }
   </style>
 </head>
 <body>
-  <video id="videoPlayer" controls playsinline preload="auto" crossorigin="anonymous"></video>
 
-  <div class="controls">
-    <button id="btnPrev">&lt; 1f</button>
-    <button id="btnNext">1f &gt;</button>
-    <button id="captureBtn" onclick="captureFrame()">儲存當前影格</button>
+  <div class="container">
+    <video id="videoPlayer" controls playsinline></video>
+    
+    <div class="status" id="statusText">影格：0 / 0s (24 FPS)</div>
+
+    <div class="controls">
+      <button onclick="stepFrame(-1)">⏮️ &lt; 1f</button>
+      <button class="primary-btn" id="playBtn" onclick="togglePlay()">⏯️ 播放 / 暫停</button>
+      <button onclick="stepFrame(1)">1f &gt; ⏭️</button>
+      <button class="markup-btn" onclick="captureFrame()">📸 截圖與劃記</button>
+    </div>
   </div>
 
-  <p>亦可按鍵盤上的 <b>＜, (上一幀)</b> 與 <b>.＞ (下一幀)</b></p>
-  <p class="mobile-tip">📱iphone請先播放影片後，再按前後幀按鈕</p>
-
   <script>
+    const video = document.getElementById('videoPlayer');
+    const statusText = document.getElementById('statusText');
+    const playBtn = document.getElementById('playBtn');
+    const FPS = 24;
+
+    // 解析 URL 中的影片參數
     const urlParams = new URLSearchParams(window.location.search);
     const videoUrl = urlParams.get('video');
-    const fps = parseInt(urlParams.get('fps')) || 24;
-    const video = document.getElementById('videoPlayer');
 
     if (videoUrl) {
-      video.src = videoUrl;
+      video.src = decodeURIComponent(videoUrl);
     }
 
-    //擷取影格
-        function captureFrame() {
-  const video = document.querySelector('video');
-  if (!video) return;
+    video.addEventListener('timeupdate', updateStatus);
 
-  // 1. 建立 Canvas 並繪製當前影格
-  const canvas = document.createElement('canvas');
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-  const currentFrame = Math.round(video.currentTime * 24);
-  const fileName = `frame_${currentFrame}.png`;
-  const imageDataUrl = canvas.toDataURL('image/png');
-
-  // 2. 判斷是否為 iOS 裝置 (iPhone / iPad)
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-  if (isIOS) {
-    // iOS 最佳解法：開啟新分頁呈現圖片 + 返回按鈕
-    const newWindow = window.open();
-    if (newWindow) {
-      newWindow.document.write(`
-        <html>
-          <head>
-            <title>${fileName}</title>
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <style>
-              body {
-                margin: 0;
-                padding: 20px 10px;
-                background-color: #121212;
-                color: #fff;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: flex-start;
-                min-height: 100vh;
-                box-sizing: border-box;
-                font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-              }
-              .back-btn {
-                background-color: #333;
-                color: #fff;
-                border: 1px solid #555;
-                padding: 10px 20px;
-                border-radius: 20px;
-                font-size: 15px;
-                font-weight: bold;
-                cursor: pointer;
-                margin-bottom: 20px;
-                text-decoration: none;
-                box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-              }
-              .back-btn:active {
-                background-color: #555;
-              }
-              img {
-                max-width: 95vw;
-                max-height: 70vh;
-                border-radius: 8px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-              }
-              p {
-                margin-top: 15px;
-                font-size: 14px;
-                color: #aaa;
-                text-align: center;
-              }
-            </style>
-          </head>
-          <body>
-            <button class="back-btn" onclick="window.close()">🔙 回到播放器</button>
-            <img src="${imageDataUrl}" alt="${fileName}" />
-            <p>💡 請長按上方圖片選擇<b>「儲存至『照片』」</b></p>
-          </body>
-        </html>
-      `);
-    } else {
-      alert("⚠️ 請允許開啟快顯視窗以檢視影格圖片！");
+    function updateStatus() {
+      const currentFrame = Math.round(video.currentTime * FPS);
+      statusText.innerText = `影格：${currentFrame} (時間：${video.currentTime.toFixed(2)}s / 24 FPS)`;
     }
-  } else {
-    // Android / Windows / Mac 桌面的標準觸發下載邏輯
-    const a = document.createElement('a');
-    a.href = imageDataUrl;
-    a.download = fileName;
-    a.click();
-  }
-}
 
-    
-    function stepFrame(frames) {
-      if (!video.paused) {
+    function togglePlay() {
+      if (video.paused) {
+        video.play();
+        playBtn.innerText = '⏸️ 暫停';
+      } else {
         video.pause();
+        playBtn.innerText = '▶️ 播放';
+      }
+    }
+
+    function stepFrame(dir) {
+      video.pause();
+      playBtn.innerText = '▶️ 播放';
+      video.currentTime = Math.max(0, video.currentTime + (dir / FPS));
+    }
+
+    // 鍵盤快捷鍵控制 (, 和 . 逐格 / 空格鍵播放)
+    window.addEventListener('keydown', (e) => {
+      if (e.key === ',' || e.key === 'a') stepFrame(-1);
+      if (e.key === '.' || e.key === 'd') stepFrame(1);
+      if (e.key === ' ') {
+        e.preventDefault();
+        togglePlay();
+      }
+    });
+
+    // ------------------------------------------------------------------
+    // 跨平台劃記畫板核心邏輯
+    // ------------------------------------------------------------------
+    function captureFrame() {
+      if (!video.videoWidth) {
+        alert("⚠️ 影片尚未載入完成，請先播放或等待載入！");
+        return;
       }
 
-      const frameDuration = 1 / fps;
-      let newTime = video.currentTime + (frames * frameDuration) + 0.0001;
+      video.pause();
+      playBtn.innerText = '▶️ 播放';
 
-      if (newTime < 0) newTime = 0;
-      if (newTime > video.duration) newTime = video.duration;
+      // 1. 建立 Canvas 並繪製當前影格
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
 
-      video.currentTime = newTime;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const currentFrame = Math.round(video.currentTime * FPS);
+      const fileName = `frame_${currentFrame}_marked.png`;
+      const imageDataUrl = canvas.toDataURL('image/png');
+
+      // 2. 開啟全功能畫板視窗
+      const newWindow = window.open();
+      if (newWindow) {
+        newWindow.document.write(`
+          <html>
+            <head>
+              <title>劃記影格 - Frame ${currentFrame}</title>
+              <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+              <style>
+                * { touch-action: none; box-sizing: border-box; }
+                body {
+                  margin: 0;
+                  padding: 10px;
+                  background-color: #1a1a1a;
+                  color: #fff;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+                }
+                .toolbar {
+                  display: flex;
+                  gap: 8px;
+                  flex-wrap: wrap;
+                  justify-content: center;
+                  align-items: center;
+                  margin-bottom: 10px;
+                  width: 100%;
+                  max-width: 900px;
+                }
+                button, select {
+                  background: #333;
+                  color: #fff;
+                  border: 1px solid #555;
+                  padding: 8px 14px;
+                  border-radius: 20px;
+                  font-size: 14px;
+                  font-weight: bold;
+                  cursor: pointer;
+                }
+                button.active {
+                  background: #007aff;
+                  border-color: #007aff;
+                }
+                button.save-btn { background: #28a745; border-color: #28a745; }
+                button.clear-btn { background: #dc3545; border-color: #dc3545; }
+                canvas {
+                  max-width: 95vw;
+                  max-height: 75vh;
+                  border-radius: 8px;
+                  box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+                  background: #000;
+                  cursor: crosshair;
+                }
+              </style>
+            </head>
+            <body>
+              <div class="toolbar">
+                <button onclick="window.close()">🔙 回播放器</button>
+                <button id="penBtn" class="active" onclick="setTool('pen')">✏️ 畫筆</button>
+                <button id="eraserBtn" onclick="setTool('eraser')">🧹 橡皮擦</button>
+                <label>顏色: <input type="color" id="penColor" value="#ff0000"></label>
+                <label>粗細: 
+                  <select id="penSize">
+                    <option value="2">細</option>
+                    <option value="5" selected>中</option>
+                    <option value="10">粗</option>
+                  </select>
+                </label>
+                <button onclick="undo()">↩️ 上一步</button>
+                <button class="clear-btn" onclick="resetCanvas()">🔄 重置</button>
+                <button class="save-btn" onclick="saveImage()">💾 儲存劃記圖片</button>
+              </div>
+
+              <canvas id="paintCanvas"></canvas>
+
+              <script>
+                const canvas = document.getElementById('paintCanvas');
+                const ctx = canvas.getContext('2d');
+                const colorPicker = document.getElementById('penColor');
+                const sizePicker = document.getElementById('penSize');
+                const penBtn = document.getElementById('penBtn');
+                const eraserBtn = document.getElementById('eraserBtn');
+
+                let currentTool = 'pen';
+                let historyStack = [];
+
+                const bgImage = new Image();
+                bgImage.src = "${imageDataUrl}";
+                bgImage.onload = () => {
+                  canvas.width = bgImage.width;
+                  canvas.height = bgImage.height;
+                  resetCanvas();
+                };
+
+                function saveHistory() {
+                  if (historyStack.length >= 20) historyStack.shift();
+                  historyStack.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+                }
+
+                function undo() {
+                  if (historyStack.length > 0) {
+                    const previousState = historyStack.pop();
+                    ctx.putImageData(previousState, 0, 0);
+                  }
+                }
+
+                function setTool(tool) {
+                  currentTool = tool;
+                  if (tool === 'pen') {
+                    penBtn.classList.add('active');
+                    eraserBtn.classList.remove('active');
+                  } else {
+                    eraserBtn.classList.add('active');
+                    penBtn.classList.remove('active');
+                  }
+                }
+
+                function resetCanvas() {
+                  saveHistory();
+                  ctx.drawImage(bgImage, 0, 0);
+                }
+
+                let isDrawing = false;
+
+                function getPos(e) {
+                  const rect = canvas.getBoundingClientRect();
+                  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                  const scaleX = canvas.width / rect.width;
+                  const scaleY = canvas.height / rect.height;
+                  return {
+                    x: (clientX - rect.left) * scaleX,
+                    y: (clientY - rect.top) * scaleY
+                  };
+                }
+
+                function startDraw(e) {
+                  saveHistory();
+                  isDrawing = true;
+                  const pos = getPos(e);
+                  ctx.beginPath();
+                  ctx.moveTo(pos.x, pos.y);
+                  ctx.lineCap = 'round';
+                  ctx.lineJoin = 'round';
+
+                  const baseSize = sizePicker.value * (canvas.width / 1000);
+
+                  if (currentTool === 'eraser') {
+                    ctx.globalCompositeOperation = 'destination-out';
+                    ctx.lineWidth = baseSize * 2.5;
+                  } else {
+                    ctx.globalCompositeOperation = 'source-over';
+                    ctx.strokeStyle = colorPicker.value;
+                    ctx.lineWidth = baseSize;
+                  }
+                }
+
+                function draw(e) {
+                  if (!isDrawing) return;
+                  e.preventDefault();
+                  const pos = getPos(e);
+                  ctx.lineTo(pos.x, pos.y);
+                  ctx.stroke();
+
+                  if (currentTool === 'eraser') {
+                    ctx.save();
+                    ctx.globalCompositeOperation = 'destination-over';
+                    ctx.drawImage(bgImage, 0, 0);
+                    ctx.restore();
+                  }
+                }
+
+                function stopDraw() {
+                  if (isDrawing) {
+                    isDrawing = false;
+                    ctx.globalCompositeOperation = 'source-over';
+                  }
+                }
+
+                canvas.addEventListener('mousedown', startDraw);
+                canvas.addEventListener('mousemove', draw);
+                canvas.addEventListener('mouseup', stopDraw);
+
+                canvas.addEventListener('touchstart', startDraw);
+                canvas.addEventListener('touchmove', draw);
+                canvas.addEventListener('touchend', stopDraw);
+
+                function saveImage() {
+                  ctx.save();
+                  ctx.globalCompositeOperation = 'destination-over';
+                  ctx.drawImage(bgImage, 0, 0);
+                  ctx.restore();
+
+                  const markedDataUrl = canvas.toDataURL('image/png');
+                  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+                  if (isIOS) {
+                    const imgWin = window.open();
+                    if (imgWin) {
+                      imgWin.document.write(\`
+                        <html>
+                          <head>
+                            <title>儲存圖片</title>
+                            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                            <style>
+                              body {
+                                margin: 0;
+                                padding: 20px 10px;
+                                background: #121212;
+                                color: #fff;
+                                display: flex;
+                                flex-direction: column;
+                                align-items: center;
+                                font-family: sans-serif;
+                              }
+                              .btn-group {
+                                display: flex;
+                                gap: 10px;
+                                margin-bottom: 15px;
+                              }
+                              button {
+                                padding: 8px 16px;
+                                border-radius: 20px;
+                                background: #333;
+                                color: #fff;
+                                border: 1px solid #555;
+                                font-size: 14px;
+                                font-weight: bold;
+                              }
+                              img {
+                                max-width: 95vw;
+                                max-height: 70vh;
+                                border-radius: 8px;
+                                box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+                              }
+                              p { color: #aaa; font-size: 14px; margin-top: 15px; text-align: center; }
+                            </style>
+                          </head>
+                          <body>
+                            <div class="btn-group">
+                              <button onclick="window.close()">🔙 回到畫板</button>
+                            </div>
+                            <img src="\${markedDataUrl}" alt="Marked Frame" />
+                            <p>💡 請長按上方圖片選擇<b>「儲存至『照片』」</b></p>
+                          </body>
+                        </html>
+                      \`);
+                    }
+                  } else {
+                    const a = document.createElement('a');
+                    a.href = markedDataUrl;
+                    a.download = "${fileName}";
+                    a.click();
+                  }
+                }
+              <\/script>
+            </body>
+          </html>
+        `);
+      } else {
+        alert("⚠️ 請允許開啟快顯視窗以使用劃記功能！");
+      }
     }
-
-    document.getElementById('btnPrev').addEventListener('click', (e) => {
-      e.preventDefault();
-      stepFrame(-1);
-    });
-
-    document.getElementById('btnNext').addEventListener('click', (e) => {
-      e.preventDefault();
-      stepFrame(1);
-    });
-
-    document.addEventListener('keydown', (e) => {
-      const active = document.activeElement;
-      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) return;
-
-      if (e.key === ',' || e.key === '<') stepFrame(-1);
-      if (e.key === '.' || e.key === '>') stepFrame(1);
-    });
   </script>
 </body>
 </html>
