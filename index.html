@@ -76,6 +76,13 @@
     }
     .btn-capture:active { background: #28b84c; }
 
+    .btn-dev {
+      background: #ff9f0a;
+      border-color: #ff9f0a;
+      color: #000;
+    }
+    .btn-dev:active { background: #d68300; }
+
     p { color: #bbb; font-size: 15px; margin-top: 16px; line-height: 1.6; }
     .mobile-tip { color: #9EAAE6; font-size: 14px; margin-top: 8px; }
   </style>
@@ -92,6 +99,7 @@
       <button id="btnPlay" class="btn-play" onclick="togglePlay()">▶️ 播放</button>
       <button id="btnNext">1f &gt; ⏭️</button>
       <button id="captureBtn" class="btn-capture" onclick="captureFrame()">儲存當前影格</button>
+      <button id="devBtn" class="btn-dev" onclick="openMarkupBoard()">📸 新功能開發中</button>
     </div>
 
     <p>亦可按鍵盤上的 <b>＜, (上一幀)</b> 與 <b>.＞ (下一幀)</b></p>
@@ -171,7 +179,7 @@
       }
     });
 
-    // 擷取影格 (純下載 / iOS 開啟分頁長按儲存)
+    // 1. 原版穩定截圖 (純下載 / iOS 開啟分頁長按儲存)
     function captureFrame() {
       if (!video.videoWidth) return;
 
@@ -199,38 +207,17 @@
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <style>
                   body {
-                    margin: 0;
-                    padding: 20px 10px;
-                    background-color: #121212;
-                    color: #fff;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    justify-content: flex-start;
-                    min-height: 100vh;
-                    box-sizing: border-box;
-                    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+                    margin: 0; padding: 20px 10px; background-color: #121212; color: #fff;
+                    display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+                    min-height: 100vh; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, sans-serif;
                   }
                   .back-btn {
-                    background-color: #333;
-                    color: #fff;
-                    border: 1px solid #555;
-                    padding: 10px 20px;
-                    border-radius: 20px;
-                    font-size: 15px;
-                    font-weight: bold;
-                    cursor: pointer;
-                    margin-bottom: 20px;
-                    text-decoration: none;
-                    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+                    background-color: #333; color: #fff; border: 1px solid #555;
+                    padding: 10px 20px; border-radius: 20px; font-size: 15px; font-weight: bold;
+                    cursor: pointer; margin-bottom: 20px; text-decoration: none; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
                   }
                   .back-btn:active { background-color: #555; }
-                  img {
-                    max-width: 95vw;
-                    max-height: 70vh;
-                    border-radius: 8px;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-                  }
+                  img { max-width: 95vw; max-height: 70vh; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
                   p { margin-top: 15px; font-size: 14px; color: #aaa; text-align: center; }
                 </style>
               </head>
@@ -250,6 +237,265 @@
         a.download = fileName;
         a.click();
       }
+    }
+
+    // 2. 「新功能開發中」：劃記畫板實驗功能
+    function openMarkupBoard() {
+      if (!video.videoWidth) {
+        alert("⚠️ 影片尚未載入，請先載入並播放影片！");
+        return;
+      }
+
+      // 點擊觸發第一時間先開啟新視窗（避免瀏覽器防彈窗機制封鎖）
+      const newWindow = window.open('', '_blank');
+      if (!newWindow) {
+        alert("⚠️ 視窗被瀏覽器封鎖！請在網址列允許「開啟快顯視窗/彈出式視窗」。");
+        return;
+      }
+
+      if (!video.paused) {
+        video.pause();
+        btnPlay.innerText = '▶️ 播放';
+      }
+
+      const totalFrames = Math.round(video.currentTime * fps);
+      const seconds = Math.floor(totalFrames / fps);
+      const frames = totalFrames % fps;
+      const secStr = String(seconds).padStart(2, '0');
+      const frameStr = String(frames).padStart(2, '0');
+      const timeTag = `${secStr}s+${frameStr}f`;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      const ctx = canvas.getContext('2d');
+      try {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      } catch (e) {
+        newWindow.close();
+        alert("⚠️ 影片來源未允許跨域擷取 (CORS)，無法啟用畫板功能！");
+        return;
+      }
+
+      const fileName = `frame_${timeTag}_marked.png`;
+      const imageDataUrl = canvas.toDataURL('image/png');
+
+      newWindow.document.write(`
+        <html>
+          <head>
+            <title>劃記影格 - ${timeTag}</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+            <style>
+              * { touch-action: none; box-sizing: border-box; }
+              body {
+                margin: 0; padding: 10px; background-color: #1a1a1a; color: #fff;
+                display: flex; flex-direction: column; align-items: center;
+                font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+              }
+              .toolbar {
+                display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+                align-items: center; margin-bottom: 10px; width: 100%; max-width: 900px;
+              }
+              button, select {
+                background: #333; color: #fff; border: 1px solid #555;
+                padding: 8px 14px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer;
+              }
+              button.active { background: #007aff; border-color: #007aff; }
+              button.save-btn { background: #28a745; border-color: #28a745; }
+              button.clear-btn { background: #dc3545; border-color: #dc3545; }
+              canvas {
+                max-width: 95vw; max-height: 75vh; border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.6); background: #000; cursor: crosshair;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="toolbar">
+              <button onclick="window.close()">🔙 回播放器</button>
+              <button id="penBtn" class="active" onclick="setTool('pen')">✏️ 畫筆</button>
+              <button id="eraserBtn" onclick="setTool('eraser')">🧹 橡皮擦</button>
+              <label>顏色: <input type="color" id="penColor" value="#ff0000"></label>
+              <label>粗細: 
+                <select id="penSize">
+                  <option value="2">細</option>
+                  <option value="5" selected>中</option>
+                  <option value="10">粗</option>
+                </select>
+              </label>
+              <button onclick="undo()">↩️ 上一步</button>
+              <button class="clear-btn" onclick="resetCanvas()">🔄 重置</button>
+              <button class="save-btn" onclick="saveImage()">💾 儲存劃記圖片</button>
+            </div>
+
+            <canvas id="paintCanvas"></canvas>
+
+            <script>
+              const canvas = document.getElementById('paintCanvas');
+              const ctx = canvas.getContext('2d');
+              const colorPicker = document.getElementById('penColor');
+              const sizePicker = document.getElementById('penSize');
+              const penBtn = document.getElementById('penBtn');
+              const eraserBtn = document.getElementById('eraserBtn');
+
+              let currentTool = 'pen';
+              let historyStack = [];
+
+              const bgImage = new Image();
+              bgImage.src = "${imageDataUrl}";
+              bgImage.onload = () => {
+                canvas.width = bgImage.width;
+                canvas.height = bgImage.height;
+                resetCanvas();
+              };
+
+              function saveHistory() {
+                if (historyStack.length >= 20) historyStack.shift();
+                historyStack.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+              }
+
+              function undo() {
+                if (historyStack.length > 0) {
+                  const previousState = historyStack.pop();
+                  ctx.putImageData(previousState, 0, 0);
+                }
+              }
+
+              function setTool(tool) {
+                currentTool = tool;
+                if (tool === 'pen') {
+                  penBtn.classList.add('active');
+                  eraserBtn.classList.remove('active');
+                } else {
+                  eraserBtn.classList.add('active');
+                  penBtn.classList.remove('active');
+                }
+              }
+
+              function resetCanvas() {
+                saveHistory();
+                ctx.drawImage(bgImage, 0, 0);
+              }
+
+              let isDrawing = false;
+
+              function getPos(e) {
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                return {
+                  x: (clientX - rect.left) * scaleX,
+                  y: (clientY - rect.top) * scaleY
+                };
+              }
+
+              function startDraw(e) {
+                saveHistory();
+                isDrawing = true;
+                const pos = getPos(e);
+                ctx.beginPath();
+                ctx.moveTo(pos.x, pos.y);
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+
+                const baseSize = sizePicker.value * (canvas.width / 1000);
+
+                if (currentTool === 'eraser') {
+                  ctx.globalCompositeOperation = 'destination-out';
+                  ctx.lineWidth = baseSize * 2.5;
+                } else {
+                  ctx.globalCompositeOperation = 'source-over';
+                  ctx.strokeStyle = colorPicker.value;
+                  ctx.lineWidth = baseSize;
+                }
+              }
+
+              function draw(e) {
+                if (!isDrawing) return;
+                e.preventDefault();
+                const pos = getPos(e);
+                ctx.lineTo(pos.x, pos.y);
+                ctx.stroke();
+
+                if (currentTool === 'eraser') {
+                  ctx.save();
+                  ctx.globalCompositeOperation = 'destination-over';
+                  ctx.drawImage(bgImage, 0, 0);
+                  ctx.restore();
+                }
+              }
+
+              function stopDraw() {
+                if (isDrawing) {
+                  isDrawing = false;
+                  ctx.globalCompositeOperation = 'source-over';
+                }
+              }
+
+              canvas.addEventListener('mousedown', startDraw);
+              canvas.addEventListener('mousemove', draw);
+              canvas.addEventListener('mouseup', stopDraw);
+
+              canvas.addEventListener('touchstart', startDraw);
+              canvas.addEventListener('touchmove', draw);
+              canvas.addEventListener('touchend', stopDraw);
+
+              function saveImage() {
+                ctx.save();
+                ctx.globalCompositeOperation = 'destination-over';
+                ctx.drawImage(bgImage, 0, 0);
+                ctx.restore();
+
+                const markedDataUrl = canvas.toDataURL('image/png');
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                              (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+                if (isIOS) {
+                  const imgWin = window.open('', '_blank');
+                  if (imgWin) {
+                    imgWin.document.write(\`
+                      <html>
+                        <head>
+                          <title>儲存圖片</title>
+                          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                          <style>
+                            body {
+                              margin: 0; padding: 20px 10px; background: #121212; color: #fff;
+                              display: flex; flex-direction: column; align-items: center; font-family: sans-serif;
+                            }
+                            .btn-group { display: flex; gap: 10px; margin-bottom: 15px; }
+                            button {
+                              padding: 8px 16px; border-radius: 20px; background: #333; color: #fff;
+                              border: 1px solid #555; font-size: 14px; font-weight: bold;
+                            }
+                            img { max-width: 95vw; max-height: 70vh; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+                            p { color: #aaa; font-size: 14px; margin-top: 15px; text-align: center; }
+                          </style>
+                        </head>
+                        <body>
+                          <div class="btn-group">
+                            <button onclick="window.close()">🔙 回到畫板</button>
+                          </div>
+                          <img src="\${markedDataUrl}" alt="Marked Frame" />
+                          <p>💡 請長按上方圖片選擇<b>「儲存至『照片』」</b></p>
+                        </body>
+                      </html>
+                    \`);
+                  }
+                } else {
+                  const a = document.createElement('a');
+                  a.href = markedDataUrl;
+                  a.download = "${fileName}";
+                  a.click();
+                }
+              }
+            <\/script>
+          </body>
+        </html>
+      `);
+      newWindow.document.close();
     }
   </script>
 </body>
