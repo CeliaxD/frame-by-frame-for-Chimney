@@ -1,75 +1,83 @@
-   //擷取影格
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Discord 逐幀播放器</title>
+  <style>
+    body {
+      background: #0f0f0f;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+    video {
+      width: 100%;
+      max-width: 900px;
+      max-height: 70vh;
+      margin-top: 10px;
+      border-radius: 8px;
+      background: #000;
+    }
+    .controls {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      padding: 0 10px;
+    }
+    button {
+      flex: 1;
+      max-width: 220px;
+      padding: 18px 10px;
+      font-size: 22px;
+      font-weight: bold;
+      cursor: pointer;
+      background: #5865F2;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(88, 101, 242, 0.4);
+      touch-action: manipulation;
+      transition: background 0.2s, transform 0.1s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button:active { transform: scale(0.96); background: #4752C4; }
+    p { color: #bbb; font-size: 15px; margin-top: 16px; line-height: 1.6; }
+    .mobile-tip { color: #9EAAE6; font-size: 14px; margin-top: 8px; }
+    @media (max-width: 600px) {
+      p { font-size: 14px; }
+      .mobile-tip { font-size: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <video id="videoPlayer" controls playsinline preload="auto" crossorigin="anonymous"></video>
+
+  <div class="controls">
+    <button id="btnPrev">&lt; 1f</button>
+    <button id="btnNext">1f &gt;</button>
+    <button id="captureBtn" onclick="captureFrame()">儲存當前影格</button>
+  </div>
+
+  <p>亦可按鍵盤上的 <b>＜, (上一幀)</b> 與 <b>.＞ (下一幀)</b></p>
+  <p class="mobile-tip">📱iphone請先播放影片後，再按前後幀按鈕</p>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const videoUrl = urlParams.get('video');
+    const fps = parseInt(urlParams.get('fps')) || 24;
+    const video = document.getElementById('videoPlayer');
+
+    if (videoUrl) {
+      video.src = videoUrl;
+    }
+
+    //擷取影格
         function captureFrame() {
-          const video = document.querySelector('video');
-          if (!video) return;
-        
-          // 1. 建立 Canvas 並繪製當前影格
-          const canvas = document.createElement('canvas');
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-        
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
-          const currentFrame = Math.round(video.currentTime * 24);
-          const fileName = `frame_${currentFrame}.png`;
-          const imageDataUrl = canvas.toDataURL('image/png');
-        
-          // 2. 判斷是否為 iOS 裝置 (iPhone / iPad)
-          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-        
-          if (isIOS) {
-            // iOS 最佳解法：開啟新分頁呈現圖片，讓使用者長按儲存
-            const newWindow = window.open();
-            if (newWindow) {
-              newWindow.document.write(`
-                <html>
-                  <head>
-                    <title>${fileName}</title>
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <style>
-                      body {
-                        margin: 0;
-                        background-color: #121212;
-                        color: #fff;
-                        display: flex;
-                        flex-direction: column;
-                        align-items: center;
-                        justify-content: center;
-                        min-height: 100vh;
-                        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-                      }
-                      img {
-                        max-width: 95vw;
-                        max-height: 80vh;
-                        border-radius: 8px;
-                        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-                      }
-                      p {
-                        margin-top: 15px;
-                        font-size: 14px;
-                        color: #aaa;
-                      }
-                    </style>
-                  </head>
-                  <body>
-                    <img src="${imageDataUrl}" alt="${fileName}" />
-                    <p>💡 請長按上方圖片選擇<b>「儲存至『照片』」</b></p>
-                  </body>
-                </html>
-              `);
-            } else {
-              alert("⚠️ 請允許開啟快顯視窗以檢視影格圖片！");
-            }
-          } else {
-            // Android / Windows / Mac 桌面的標準觸發下載邏輯
-            const a = document.createElement('a');
-            a.href = imageDataUrl;
-            a.download = fileName;
-            a.click();
-          }
-        }
   const video = document.querySelector('video');
   if (!video) return;
 
@@ -161,7 +169,7 @@
   }
 }
 
-
+    
     function stepFrame(frames) {
       if (!video.paused) {
         video.pause();
@@ -184,3 +192,15 @@
     document.getElementById('btnNext').addEventListener('click', (e) => {
       e.preventDefault();
       stepFrame(1);
+    });
+
+    document.addEventListener('keydown', (e) => {
+      const active = document.activeElement;
+      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) return;
+
+      if (e.key === ',' || e.key === '<') stepFrame(-1);
+      if (e.key === '.' || e.key === '>') stepFrame(1);
+    });
+  </script>
+</body>
+</html>
