@@ -49,7 +49,7 @@
       font-size: 15px;
       font-weight: bold;
       cursor: pointer;
-      background: #2c2c2e;
+      background: #2e2f32;
       color: #fff;
       border: 1px solid #444;
       border-radius: 20px;
@@ -61,27 +61,28 @@
       justify-content: center;
       gap: 4px;
     }
-    button:active { transform: scale(0.96); background: #3a3a3c; }
+    button:active { transform: scale(0.96); background: #3e3f42; }
     
     .btn-play {
       background: #552fcc;
       border-color: #552fcc;
+      color: #fff;
     }
-    .btn-play:active { background: #633ed7; }
+    .btn-play:active { background: #4424a8; }
 
     .btn-capture {
-      background: #30d158;
-      border-color: #30d158;
+      background: #0a9fa8;
+      border-color: #0a9fa8;
       color: #000;
     }
-    .btn-capture:active { background: #28b84c; }
+    .btn-capture:active { background: #088188; }
 
     .btn-dev {
-      background: #ff9f0a;
-      border-color: #ff9f0a;
+      background: #ee7889;
+      border-color: #ee7889;
       color: #000;
     }
-    .btn-dev:active { background: #d68300; }
+    .btn-dev:active { background: #d66373; }
 
     p { color: #bbb; font-size: 15px; margin-top: 16px; line-height: 1.6; }
     .mobile-tip { color: #9EAAE6; font-size: 14px; margin-top: 8px; }
@@ -318,7 +319,7 @@
             <div class="toolbar">
               <button onclick="window.close()">🔙 回播放器</button>
               <button id="penBtn" class="active" onclick="setTool('pen')">✏️ 畫筆</button>
-              <button id="eraserBtn" onclick="setTool('eraser')">🧽 橡皮擦</button>
+              <button id="eraserBtn" onclick="setTool('eraser')">🧹 橡皮擦</button>
               <label>顏色: <input type="color" id="penColor" value="#ff0000"></label>
               <label>粗細: 
                 <select id="penSize">
