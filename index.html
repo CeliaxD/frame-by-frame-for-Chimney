@@ -156,6 +156,35 @@
       if (e.key === ' ') { e.preventDefault(); togglePlay(); }
     });
 
+    // 右上角浮點水印繪製工具
+    function drawFrameWatermark(ctx, text, width, height) {
+      ctx.save();
+      // 動態根據圖片寬度計算字型與邊框大小
+      const fontSize = Math.max(16, Math.round(height * 0.035));
+      const paddingX = fontSize * 0.6;
+      const paddingY = fontSize * 0.35;
+      const margin = Math.max(12, Math.round(height * 0.02));
+
+      ctx.font = `bold ${fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
+      ctx.textBaseline = 'top';
+
+      const textMetrics = ctx.measureText(text);
+      const bgWidth = textMetrics.width + (paddingX * 2);
+      const bgHeight = fontSize + (paddingY * 2);
+
+      const x = width - bgWidth - margin;
+      const y = margin;
+
+      // 繪製半透明黑框
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+      ctx.fillRect(x, y, bgWidth, bgHeight);
+
+      // 繪製不透明白字
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(text, x + paddingX, y + paddingY);
+      ctx.restore();
+    }
+
     function captureFrame() {
       if (!video.videoWidth) return;
 
@@ -167,6 +196,11 @@
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
       const currentFrame = Math.round(video.currentTime * fps);
+      const frameTagText = `第${String(currentFrame).padStart(3, '0')}格`;
+      
+      // 繪製右上角影格標籤
+      drawFrameWatermark(ctx, frameTagText, canvas.width, canvas.height);
+
       const fileName = `frame_${currentFrame}.png`;
       const imageDataUrl = canvas.toDataURL('image/png');
 
@@ -226,6 +260,7 @@
       const seconds = Math.floor(totalFrames / fps);
       const frames = totalFrames % fps;
       const timeTag = `${String(seconds).padStart(2, '0')}s+${String(frames).padStart(2, '0')}f`;
+      const frameTagText = `第${String(totalFrames).padStart(3, '0')}格`;
 
       const canvas = document.createElement('canvas');
       canvas.width = video.videoWidth;
@@ -272,7 +307,7 @@
                   <option value="10">粗</option>
                 </select>
               </label>
-              <button onclick="undo()">↩️ 上一步</button>
+              <button onclick="undo()">↩️ 上一步 (Ctrl+Z)</button>
               <button class="clear-btn" onclick="resetCanvas()">❌ 清除劃記</button>
               <button class="save-btn" onclick="saveImage()">💾 儲存劃記圖片</button>
             </div>
@@ -313,6 +348,14 @@
                 } else { resetCanvas(); }
               }
 
+              // 監聽鍵盤 Ctrl+Z / Cmd+Z 快捷鍵
+              window.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+                  e.preventDefault();
+                  undo();
+                }
+              });
+
               function setTool(tool) {
                 currentTool = tool;
                 if (tool === 'pen') {
@@ -349,7 +392,6 @@
                   if (ev.touches && ev.touches.length > 0) {
                     clientX = ev.touches[0].clientX;
                     clientY = ev.touches[0].clientY;
-                    // iOS 手指 force 容錯處理
                     pressure = ev.touches[0].force !== undefined ? ev.touches[0].force : 0;
                   }
 
@@ -365,18 +407,12 @@
               function calculateLineWidth(p, isStart = false) {
                 const baseSize = sizePicker.value * (canvas.width / 1000);
 
-                // 檢查是否有有效的感壓訊號
                 if (p.pressure !== undefined && p.pressure > 0 && p.pressure !== 0.5) {
-                  // 關鍵修復：限制 pressure 最大不超過 1.0，防止 iOS 手指起筆觸控面積爆表
                   let clampedPressure = Math.min(Math.max(p.pressure, 0.05), 1.0);
-
-                  // 若為起筆第一點，賦予溫和初始筆壓，不使用極端值
                   if (isStart) clampedPressure = Math.min(clampedPressure, 0.5);
-
                   return Math.max(baseSize * clampedPressure * 1.8, baseSize * 0.3);
                 }
 
-                // 無任何感壓時使用基礎設定值
                 return baseSize;
               }
 
@@ -386,7 +422,6 @@
                 const startPt = pts[0];
                 currentStrokePoints = [startPt];
 
-                // 起筆第一點傳入 isStart = true，阻擋爆大圓點
                 currentWidth = calculateLineWidth(startPt, true);
               }
 
@@ -395,8 +430,6 @@
                 const mid2 = { x: (p2.x + p3.x) / 2, y: (p2.y + p3.y) / 2 };
 
                 const targetW = calculateLineWidth(p3);
-                
-                // 漸進式線寬平滑，讓壓感轉換過程柔軟過渡
                 currentWidth = currentWidth * 0.8 + targetW * 0.2;
 
                 ctx.beginPath();
@@ -433,7 +466,6 @@
                 for (let pt of pts) {
                   const lastPt = currentStrokePoints[currentStrokePoints.length - 1];
                   
-                  // 距離採樣門檻 > 2px，保持滑順且不堆積線條
                   if (lastPt) {
                     const dist = Math.hypot(pt.x - lastPt.x, pt.y - lastPt.y);
                     if (dist < 2.0) continue;
@@ -460,7 +492,6 @@
                 }
               }
 
-              // 事件綁定
               canvas.addEventListener('pointerdown', startDraw);
               canvas.addEventListener('pointermove', draw);
               canvas.addEventListener('pointerup', stopDraw);
@@ -471,13 +502,47 @@
               canvas.addEventListener('touchend', stopDraw);
               canvas.addEventListener('touchcancel', stopDraw);
 
-              function saveImage() {
-                ctx.save();
-                ctx.globalCompositeOperation = 'destination-over';
-                ctx.drawImage(bgImage, 0, 0);
-                ctx.restore();
+              // 水印標籤繪製邏輯
+              function drawWatermark(targetCtx, text, w, h) {
+                targetCtx.save();
+                const fontSize = Math.max(16, Math.round(h * 0.035));
+                const paddingX = fontSize * 0.6;
+                const paddingY = fontSize * 0.35;
+                const margin = Math.max(12, Math.round(h * 0.02));
 
-                const markedDataUrl = canvas.toDataURL('image/png');
+                targetCtx.font = \`bold \${fontSize}px -apple-system, BlinkMacSystemFont, sans-serif\`;
+                targetCtx.textBaseline = 'top';
+
+                const textMetrics = targetCtx.measureText(text);
+                const bgWidth = textMetrics.width + (paddingX * 2);
+                const bgHeight = fontSize + (paddingY * 2);
+
+                const x = w - bgWidth - margin;
+                const y = margin;
+
+                targetCtx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+                targetCtx.fillRect(x, y, bgWidth, bgHeight);
+
+                targetCtx.fillStyle = '#ffffff';
+                targetCtx.fillText(text, x + paddingX, y + paddingY);
+                targetCtx.restore();
+              }
+
+              function saveImage() {
+                // 建立臨時 Canvas 專門處理輸出，不破壞畫板上的可編輯歷史
+                const exportCanvas = document.createElement('canvas');
+                exportCanvas.width = canvas.width;
+                exportCanvas.height = canvas.height;
+                const exportCtx = exportCanvas.getContext('2d');
+
+                // 補上背景底圖與筆刷劃記
+                exportCtx.drawImage(bgImage, 0, 0);
+                exportCtx.drawImage(canvas, 0, 0);
+
+                // 壓上右上角「第 XXX 格」標籤
+                drawWatermark(exportCtx, "${frameTagText}", exportCanvas.width, exportCanvas.height);
+
+                const markedDataUrl = exportCanvas.toDataURL('image/png');
                 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
                               (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
