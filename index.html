@@ -159,7 +159,6 @@
     // 右上角浮點水印繪製工具
     function drawFrameWatermark(ctx, text, width, height) {
       ctx.save();
-      // 動態根據圖片寬度計算字型與邊框大小
       const fontSize = Math.max(16, Math.round(height * 0.035));
       const paddingX = fontSize * 0.6;
       const paddingY = fontSize * 0.35;
@@ -175,11 +174,9 @@
       const x = width - bgWidth - margin;
       const y = margin;
 
-      // 繪製半透明黑框
       ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
       ctx.fillRect(x, y, bgWidth, bgHeight);
 
-      // 繪製不透明白字
       ctx.fillStyle = '#ffffff';
       ctx.fillText(text, x + paddingX, y + paddingY);
       ctx.restore();
@@ -198,7 +195,6 @@
       const currentFrame = Math.round(video.currentTime * fps);
       const frameTagText = `第${String(currentFrame).padStart(3, '0')}格`;
       
-      // 繪製右上角影格標籤
       drawFrameWatermark(ctx, frameTagText, canvas.width, canvas.height);
 
       const fileName = `frame_${currentFrame}.png`;
@@ -297,8 +293,8 @@
           <body>
             <div class="toolbar">
               <button onclick="window.close()">⬅️ 回播放器</button>
-              <button id="penBtn" class="active" onclick="setTool('pen')">✏️ 畫筆</button>
-              <button id="eraserBtn" onclick="setTool('eraser')">🧽 橡皮擦</button>
+              <button id="penBtn" class="active" onclick="setTool('pen')">✏️ 筆Ｂ</button>
+              <button id="eraserBtn" onclick="setTool('eraser')">🧽 橡皮擦Ｅ</button>
               <label>顏色: <input type="color" id="penColor" value="#ff0000"></label>
               <label>粗細: 
                 <select id="penSize">
@@ -348,14 +344,6 @@
                 } else { resetCanvas(); }
               }
 
-              // 監聽鍵盤 Ctrl+Z / Cmd+Z 快捷鍵 
-              window.addEventListener('keydown', (e) => {
-                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
-                  e.preventDefault();
-                  undo();
-                }
-              });
-
               function setTool(tool) {
                 currentTool = tool;
                 if (tool === 'pen') {
@@ -366,6 +354,24 @@
                   penBtn.classList.remove('active');
                 }
               }
+
+              // 監聽鍵盤快捷鍵 (B 鍵畫筆, E 鍵橡皮擦, Ctrl+Z/Cmd+Z 上一步)
+              window.addEventListener('keydown', (e) => {
+                const active = document.activeElement;
+                if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) return;
+
+                const key = e.key.toLowerCase();
+                if (key === 'b') {
+                  e.preventDefault();
+                  setTool('pen');
+                } else if (key === 'e') {
+                  e.preventDefault();
+                  setTool('eraser');
+                } else if ((e.ctrlKey || e.metaKey) && key === 'z') {
+                  e.preventDefault();
+                  undo();
+                }
+              });
 
               function resetCanvas() {
                 ctx.drawImage(bgImage, 0, 0);
@@ -502,7 +508,6 @@
               canvas.addEventListener('touchend', stopDraw);
               canvas.addEventListener('touchcancel', stopDraw);
 
-              // 水印標籤繪製邏輯
               function drawWatermark(targetCtx, text, w, h) {
                 targetCtx.save();
                 const fontSize = Math.max(16, Math.round(h * 0.035));
@@ -529,17 +534,14 @@
               }
 
               function saveImage() {
-                // 建立臨時 Canvas 專門處理輸出，不破壞畫板上的可編輯歷史
                 const exportCanvas = document.createElement('canvas');
                 exportCanvas.width = canvas.width;
                 exportCanvas.height = canvas.height;
                 const exportCtx = exportCanvas.getContext('2d');
 
-                // 補上背景底圖與筆刷劃記
                 exportCtx.drawImage(bgImage, 0, 0);
                 exportCtx.drawImage(canvas, 0, 0);
 
-                // 壓上右上角「第 XXX 格」標籤
                 drawWatermark(exportCtx, "${frameTagText}", exportCanvas.width, exportCanvas.height);
 
                 const markedDataUrl = exportCanvas.toDataURL('image/png');
@@ -564,7 +566,7 @@
                         </head>
                         <body>
                           <div class="btn-group">
-                            <button onclick="window.close()">🔙 回到畫板</button>
+                            <button onclick="window.close()">⬅️ 回到劃記</button>
                           </div>
                           <img src="\${markedDataUrl}" alt="Marked Frame" />
                           <p>💡 請長按上方圖片選擇<b>「儲存至『照片』」</b></p>
