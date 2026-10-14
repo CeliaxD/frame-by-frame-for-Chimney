@@ -62,7 +62,7 @@
       gap: 4px;
     }
     button:active { transform: scale(0.96); background: #3e3f42; }
-    
+
     .btn-play { background:#197bff; border-color:#197bff; color: #fff; }
     .btn-play:active { background: #1a40c9; }
 
@@ -91,7 +91,8 @@
       <button id="devBtn" class="btn-dev" onclick="openMarkupBoard()">在這格劃記</button>
     </div>
 
-    <p>亦可按 空白鍵 (播放/暫停)｜<b>方向鍵🠔(上一幀)</b>｜<b>方向鍵🠖(下一幀)</b></p>
+    <p>亦可按鍵盤上的 <b>＜, (上一幀)</b> 與 <b>.＞ (下一幀)</b></p>
+    <p>亦可按 空白鍵 (播放/暫停)　<b>＜鍵 (上一幀)</b> 與 <b>＞鍵 (下一幀)</b></p>
     <p class="mobile-tip">📱 iphone請先播放影片後，再按前後幀按鈕</p>
   </div>
 
@@ -151,15 +152,8 @@
       const active = document.activeElement;
       if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) return;
 
-      // 支援方向鍵 ← → 以及原本的 , < 和 . >
-      if (e.key === 'ArrowLeft' || e.key === ',' || e.key === '<') {
-        e.preventDefault();
-        stepFrame(-1);
-      }
-      if (e.key === 'ArrowRight' || e.key === '.' || e.key === '>') {
-        e.preventDefault();
-        stepFrame(1);
-      }
+      if (e.key === ',' || e.key === '<') stepFrame(-1);
+      if (e.key === '.' || e.key === '>') stepFrame(1);
       if (e.key === ' ') { e.preventDefault(); togglePlay(); }
     });
 
@@ -201,7 +195,7 @@
 
       const currentFrame = Math.round(video.currentTime * fps);
       const frameTagText = `第${String(currentFrame).padStart(3, '0')}格`;
-      
+
       drawFrameWatermark(ctx, frameTagText, canvas.width, canvas.height);
 
       const fileName = `frame_${currentFrame}.png`;
@@ -552,7 +546,7 @@
                 const paddingY = fontSize * 0.35;
                 const margin = Math.max(12, Math.round(h * 0.02));
 
-                targetCtx.font = `bold ${fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
+                targetCtx.font = \`bold \${fontSize}px -apple-system, BlinkMacSystemFont, sans-serif\`;
                 targetCtx.textBaseline = 'top';
 
                 const textMetrics = targetCtx.measureText(text);
@@ -588,7 +582,7 @@
                 if (isIOS) {
                   const imgWin = window.open('', '_blank');
                   if (imgWin) {
-                    imgWin.document.write(`
+                    imgWin.document.write(\`
                       <html>
                         <head>
                           <title>儲存圖片</title>
@@ -605,11 +599,11 @@
                           <div class="btn-group">
                             <button onclick="window.close()">⬅️ 回到劃記</button>
                           </div>
-                          <img src="${markedDataUrl}" alt="Marked Frame" />
+                          <img src="\${markedDataUrl}" alt="Marked Frame" />
                           <p>💡 請長按上方圖片選擇<b>「儲存到照片」</b></p>
                         </body>
                       </html>
-                    `);
+                    \`);
                   }
                 } else {
                   const a = document.createElement('a');
